@@ -1,32 +1,21 @@
 #include "conn_conf.h"
 
-void create() {
-    int server_fd, new_socket;
+int init_tcp_server(int port) {
+    int server_fd;
     struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char response[1024] = {'C','I','A','O','\0'};
 
     // Creazione della socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("Socket creation failed");
+        perror("Socket failed");
         exit(EXIT_FAILURE);
     }
 
-    // Opzioni della socket
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-        perror("Set socket options failed");
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    // Impostazione dell'indirizzo del server
+    // Impostazione dell'indirizzo e della porta
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY; // Accetta connessioni su qualsiasi indirizzo
-    address.sin_port = htons(PORT);
+    address.sin_addr.s_addr = INADDR_ANY; // Accetta connessioni su tutte le interfacce
+    address.sin_port = htons(port); // Convertire la porta in formato di rete
 
-    // Associazione della socket all'indirizzo
+    // Binding della socket
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed");
         close(server_fd);
@@ -34,35 +23,39 @@ void create() {
     }
 
     // Messa in ascolto della socket
-    if (listen(server_fd, 3) < 0) {
+    if (listen(server_fd, BACKLOG) < 0) {
         perror("Listen failed");
         close(server_fd);
         exit(EXIT_FAILURE);
     }
 
-    printf("Server is listening on port %d\n", PORT);
+    printf("Server in ascolto sulla porta %d\n", port);
+    return server_fd; // Restituisce il file descriptor della socket
+}
 
-    // Accettazione di una connessione
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-        perror("Accept failed");
-        close(server_fd);
-        exit(EXIT_FAILURE);
+void handle_client(int client_fd) {
+    char buffer[BUFFER_SIZE];
+    int bytes_read;
+
+    // Leggi la richiesta dal client
+    bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
+    if (bytes_read < 0) {
+        perror("Read failed");
+        return;
     }
 
-    printf("Connection accepted\n");
+    // Null-terminare la stringa per la stampa
+    buffer[bytes_read] = '\0';
+    printf("Richiesta ricevuta:\n%s\n", buffer);
 
-    // Ricezione di un messaggio dal client
-    int bytes_received = recv(new_socket, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received > 0) {
-        buffer[bytes_received] = '\0'; // Terminazione della stringa
-        printf("Message received from client: %s\n", buffer);
-
-        // Inviare una risposta al client
-        send(new_socket, response, strlen(response), 0);
-        printf("Response sent to client\n");
+    // Controlla se la richiesta è una POST
+    if (strncmp(buffer, "POST /api?param=ciao", 20) == 0) {
+        // Risposta al client
+        const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nRicevuto: ciao";
+        write(client_fd, response, strlen(response));
+    } else {
+        // Risposta per richieste non riconosciute
+        const char *response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";
+        write(client_fd, response, strlen(response));
     }
-
-    // Chiusura delle socket
-    close(new_socket);
-    close(server_fd);
 }
