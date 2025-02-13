@@ -50,7 +50,7 @@ void handle_client(int client_fd) {
 
     // Controlla se la richiesta è una POST
     if (strncmp(buffer, "POST /signin", 12) == 0) {
-        printf("%s\n", buffer);
+
         // Risposta al client
         const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nRicevuto: signin";
         write(client_fd, response, strlen(response));

@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include "structure.h"
 
 int init_tcp_server();
 void handle_client(int client_fd);
