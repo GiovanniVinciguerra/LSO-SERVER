@@ -49,9 +49,10 @@ void handle_client(int client_fd) {
     printf("Richiesta ricevuta:\n%s\n", buffer);
 
     // Controlla se la richiesta è una POST
-    if (strncmp(buffer, "POST /api?param=ciao", 20) == 0) {
+    if (strncmp(buffer, "POST /signin", 12) == 0) {
+        printf("%s\n", buffer);
         // Risposta al client
-        const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nRicevuto: ciao";
+        const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nRicevuto: signin";
         write(client_fd, response, strlen(response));
     } else {
         // Risposta per richieste non riconosciute
