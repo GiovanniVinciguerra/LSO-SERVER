@@ -93,7 +93,7 @@ void handle_client(int client_fd) {
 
 char* find_body(char* buffer) {
     char* body_pt = NULL;
-    body_pt = strstr(buffer, "{\n");
+    body_pt = strstr(buffer, "{");
 
     return body_pt;
 }
