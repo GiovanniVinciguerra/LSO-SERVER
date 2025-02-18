@@ -77,6 +77,8 @@ void handle_client(int client_fd) {
             return;
         }
 
+        printf("%s\n", body_pt);
+
         struct user* new_user = get_user(body_pt);
         int save_check = save(new_user);
         printf("\n%s %s %s %s %s\n", new_user -> name, new_user -> surname, new_user -> username, new_user -> email, new_user -> password);
