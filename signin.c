@@ -6,7 +6,7 @@ struct user* get_user(char* buffer_pt) {
     int copy_check = 0, byte_copy = 0, choice = 0;
 
 
-    while(*buffer_pt != '\0') {
+    while(*buffer_pt != '}') {
         if(*buffer_pt == ':') {
             copy_check = 1;
             continue;
