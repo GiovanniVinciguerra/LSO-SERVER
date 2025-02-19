@@ -19,7 +19,6 @@ struct user* get_user(char* buffer_pt) {
                 copy_check = 0;
                 buffer_pt+=2;
                 temp_buff[byte_copy] = '\0';
-                printf("VALUE: %s\n", temp_buff);
                 switch(choice) {
                     case 0:
                         new_user -> name = (char*)malloc(sizeof(char) * byte_copy);
@@ -57,7 +56,17 @@ struct user* get_user(char* buffer_pt) {
 }
 
 int save(struct user* new_user) {
-    int check = 0;
+    FILE* fp = fopen("users.txt", "a"); // Apre il file in modalità append
+    if(fp == NULL) { // Controlla che il file sia stato aperto correttamente
+        perror("Errore nell'apertura del file users.txt\n");
+        return -1;
+    }
 
-    return check;
+    // Stampa il nuovo utente sul file
+    fprintf(fp, "%s,%s,%s,%s,%s\n", new_user -> name, new_user -> surname, new_user -> username, new_user -> email, new_user -> password);
+
+    // Chiude il file
+    fclose(fp);
+
+    return 0;
 }
