@@ -15,7 +15,7 @@ struct user* get_user(char* buffer_pt) {
         }
 
         if(copy_check == 1) {
-            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 4)) {
+            if(*buffer_pt == '"' && (*(buffer_pt + 2) == '\n' || choice == 4)) {
                 copy_check = 0;
                 buffer_pt+=2;
                 temp_buff[byte_copy] = '\0';
