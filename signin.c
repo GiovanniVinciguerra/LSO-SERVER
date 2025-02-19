@@ -6,21 +6,16 @@ struct user* get_user(char* buffer_pt) {
     int copy_check = 0, byte_copy = 0, choice = 0;
 
     while(*buffer_pt != '}') {
-        printf("Sono qui\n");
         if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
             copy_check = 1;
             buffer_pt+=2;
-            printf("Sono nel primo if\n");
         } else if(copy_check == 0) {
             buffer_pt++;
-            printf("Sono nell'else del primo if\n");
             continue;
         }
 
         if(copy_check == 1) {
-            printf("Sono nel secondo if\n");
             if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || *(buffer_pt + 1) == '\n')) {
-                printf("Sono nel terzo if\n");
                 copy_check = 0;
                 buffer_pt+=2;
                 temp_buff[byte_copy] = '\0';
@@ -40,7 +35,7 @@ struct user* get_user(char* buffer_pt) {
                         break;
                     case 3:
                         new_user -> email = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(new_user -> name, temp_buff);
+                        strcpy(new_user -> email, temp_buff);
                         break;
                     case 4:
                         new_user -> password = (char*)malloc(sizeof(char) * byte_copy);
@@ -50,7 +45,6 @@ struct user* get_user(char* buffer_pt) {
                 byte_copy = 0;
                 choice++;
             } else {
-                printf("Sono nell'else del terzo if\n");
                 temp_buff[byte_copy] = *buffer_pt;
                 buffer_pt++;
                 byte_copy++;
