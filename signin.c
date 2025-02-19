@@ -7,16 +7,18 @@ struct user* get_user(char* buffer_pt) {
 
 
     while(*buffer_pt != '}') {
-        if(*buffer_pt == ':') {
+        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
             copy_check = 1;
+            buffer_pt+=2;
+        } else {
+            buffer_pt++;
             continue;
         }
-        if(copy_check == 1 && *buffer_pt != '"') {
-            if(*buffer_pt != ',') {
-                temp_buff[byte_copy] = *buffer_pt;
-                byte_copy++;
-            } else {
+
+        if(copy_check == 1) {
+            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || *(buffer_pt + 1) == '\n')) {
                 copy_check = 0;
+                buffer_pt+=2;
                 temp_buff[byte_copy] = '\0';
                 switch(choice) {
                     case 0:
@@ -42,9 +44,12 @@ struct user* get_user(char* buffer_pt) {
                 }
                 byte_copy = 0;
                 choice++;
+            } else {
+                temp_buff[byte_copy] = *buffer_pt;
+                buffer_pt++;
+                byte_copy++;
             }
         }
-        buffer_pt++;
     }
 
     return new_user;

@@ -18,8 +18,8 @@ int main() {
         }
 
         printf("Connessione accettata da %s:%d\n",
-               inet_ntoa(client_address.sin_addr),
-               ntohs(client_address.sin_port));
+        inet_ntoa(client_address.sin_addr),
+        ntohs(client_address.sin_port));
 
         // Gestisci la connessione con il client
         handle_client(client_fd);
