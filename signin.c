@@ -4,18 +4,23 @@ struct user* get_user(char* buffer_pt) {
     struct user* new_user = (struct user*)malloc(sizeof(struct user));
     char* temp_buff = (char*)malloc(sizeof(char) * TEMP_BUFFER_SIZE);
     int copy_check = 0, byte_copy = 0, choice = 0;
-    printf("Sono qui\n");
+
     while(*buffer_pt != '}') {
+        printf("Sono qui\n");
         if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
             copy_check = 1;
             buffer_pt+=2;
+            printf("Sono nel primo if\n");
         } else {
             buffer_pt++;
+            printf("Sono nell'else del primo if\n");
             continue;
         }
 
         if(copy_check == 1) {
+            printf("Sono nel secondo if\n");
             if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || *(buffer_pt + 1) == '\n')) {
+                printf("Sono nel terzo if\n");
                 copy_check = 0;
                 buffer_pt+=2;
                 temp_buff[byte_copy] = '\0';
@@ -45,6 +50,7 @@ struct user* get_user(char* buffer_pt) {
                 byte_copy = 0;
                 choice++;
             } else {
+                printf("Sono nell'else del terzo if\n");
                 temp_buff[byte_copy] = *buffer_pt;
                 buffer_pt++;
                 byte_copy++;
