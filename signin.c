@@ -11,7 +11,7 @@ struct user* get_user(char* buffer_pt) {
             copy_check = 1;
             buffer_pt+=2;
             printf("Sono nel primo if\n");
-        } else {
+        } else if(copy_check == 0) {
             buffer_pt++;
             printf("Sono nell'else del primo if\n");
             continue;
