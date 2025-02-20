@@ -2,6 +2,7 @@
 #define SIGNIN_HEADER
 
 #define TEMP_BUFFER_SIZE 256
+#define BUFFER_READ_SIZE 335
 
 #include <stdio.h>
 #include <stdlib.h>

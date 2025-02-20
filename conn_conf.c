@@ -62,6 +62,8 @@ void handle_client(int client_fd) {
         char* response = NULL;
         if(save_check == 0)
             response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nUtente registrato";
+        else if(save_check == 1)
+            response = "HTTP/1.1 409 OK\r\nContent-Type: text/plain\r\n\r\nUtente già registrato";
         else
             response = "HTTP/1.1 500 OK\r\nContent-Type: text/plain\r\n\r\nUtente non registrato";
 
