@@ -63,9 +63,35 @@ void handle_client(int client_fd) {
         if(save_check == 0)
             response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nUtente registrato";
         else if(save_check == 1)
-            response = "HTTP/1.1 409 OK\r\nContent-Type: text/plain\r\n\r\nUtente già registrato";
+            response = "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\n\r\nUtente già registrato";
         else
-            response = "HTTP/1.1 500 OK\r\nContent-Type: text/plain\r\n\r\nUtente non registrato";
+            response = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nUtente non registrato";
+
+        write(client_fd, response, strlen(response));
+    } else if (strncmp(buffer, "GET /login", 10) == 0) {
+        char* body_pt = find_body(buffer);
+        if(body_pt == NULL) {
+            perror("Body non trovato");
+            return;
+        }
+
+        struct user* find_user = check_user_exist(body_pt);
+        char* response = NULL;
+        if(find_user != NULL) {
+            response = (char*)malloc(sizeof(char) * BUFFER_SIZE);
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{");
+            strcat(response, "\n\"nome\":\"");
+            strcat(response, find_user -> name);
+            strcat(response, "\",\n");
+            strcat(response, "\"surname\":\"");
+            strcat(response, find_user -> surname);
+            strcat(response, "\",\n");
+            strcat(response, "\n\"email\":\"");
+            strcat(response, find_user -> email);
+            strcat(response, "\"\n}");
+            free(response);
+        } else
+            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUtente non trovato";
 
         write(client_fd, response, strlen(response));
     } else {
