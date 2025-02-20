@@ -68,7 +68,7 @@ void handle_client(int client_fd) {
             response = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nUtente non registrato";
 
         write(client_fd, response, strlen(response));
-    } else if (strncmp(buffer, "GET /login", 10) == 0) {
+    } else if (strncmp(buffer, "POST /login", 10) == 0) {
         char* body_pt = find_body(buffer);
         if(body_pt == NULL) {
             perror("Body non trovato");
@@ -79,7 +79,7 @@ void handle_client(int client_fd) {
         char* response = NULL;
         if(find_user != NULL) {
             response = (char*)malloc(sizeof(char) * BUFFER_SIZE);
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n{");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{");
             strcat(response, "\n\"nome\":\"");
             strcat(response, find_user -> name);
             strcat(response, "\",\n");
