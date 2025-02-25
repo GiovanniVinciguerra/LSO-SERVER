@@ -31,9 +31,31 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="conn_conf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="conn_conf.h" />
+		<Unit filename="game.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="game.h" />
+		<Unit filename="login.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="login.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="session.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="session.h" />
+		<Unit filename="signin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="signin.h" />
+		<Unit filename="size_define.h" />
+		<Unit filename="structure.h" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

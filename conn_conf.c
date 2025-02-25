@@ -30,6 +30,7 @@ int init_tcp_server(int port) {
     }
 
     printf("Server in ascolto sulla porta %d\n", port);
+
     return server_fd; // Restituisce il file descriptor della socket
 }
 
@@ -78,6 +79,13 @@ void handle_client(int client_fd) {
         struct user* find_user = check_user_exist(body_pt);
         char* response = NULL;
         if(find_user != NULL) {
+            //piccola modifica per il login, se l'utente è stato trovato vado a generare un session id e lo inserisco in una lista globale session_list.Tutto definito in session.c
+            char* session_id = genera_session_id();
+                if (session_id) {
+                    printf("Session ID generato: %s\n", session_id);
+                    //forse sarebbe meglio controllare se l'utente è già loggato?
+                    add_session(&session_list, session_id);
+                }
             response = (char*)malloc(sizeof(char) * BUFFER_SIZE);
             strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{");
             strcat(response, "\n\"nome\":\"");
@@ -88,12 +96,32 @@ void handle_client(int client_fd) {
             strcat(response, "\",\n");
             strcat(response, "\n\"email\":\"");
             strcat(response, find_user -> email);
+            strcat(response, "\",\n");
+            strcat(response, "\"session_id\":\"");
+            strcat(response, session_id);
             strcat(response, "\"\n}");
             free(response);
+            free(session_id);
         } else
             response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUtente non trovato";
 
         write(client_fd, response, strlen(response));
+    } else if(strncmp(buffer, "POST /new-game", 13)){
+        char* body_pt = find_body(buffer);
+        char* username_sfidante = NULL;
+        char* username_sfidato = NULL;
+
+        //faccio la verifica del session id e ricavo gli username della partita
+        int result = check_session_id(body_pt, username_sfidante, username_sfidato);
+        if(result == -1){
+           perror("Utente non loggato");
+        } else {
+           if(strlen(username_sfidante) > 0 && strlen(username_sfidato) > 0){
+              //dovremmo salvare le partite in un file, c'è già il metodo in game.c
+              //cosa restituiamo? credo 200 OK senza altro tanto il client già ha i dati della partita
+           }
+        }
+
     } else {
         // Risposta per richieste non riconosciute
         char *response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";

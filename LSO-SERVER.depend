@@ -1,0 +1,58 @@
+# depslib dependency file v1.0
+1740079777 source:/home/elia/Scrivania/LSO-SERVER-main/main.c
+	<stdio.h>
+	<stdlib.h>
+	"conn_conf.h"
+
+1740503114 /home/elia/Scrivania/LSO-SERVER-main/conn_conf.h
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<unistd.h>
+	<arpa/inet.h>
+	"signin.h"
+	"login.h"
+	"structure.h"
+	"size_define.h"
+	"session.h"
+
+1740079777 /home/elia/Scrivania/LSO-SERVER-main/signin.h
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"structure.h"
+	"size_define.h"
+
+1740079777 /home/elia/Scrivania/LSO-SERVER-main/structure.h
+
+1740079777 /home/elia/Scrivania/LSO-SERVER-main/size_define.h
+
+1740079777 /home/elia/Scrivania/LSO-SERVER-main/login.h
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"structure.h"
+	"size_define.h"
+
+1740079777 source:/home/elia/Scrivania/LSO-SERVER-main/login.c
+	"login.h"
+
+1740506455 source:/home/elia/Scrivania/LSO-SERVER-main/session.c
+	<stdio.h>
+	<stdlib.h>
+	<fcntl.h>
+	<unistd.h>
+	<string.h>
+	"session.h"
+	"size_define.h"
+
+1740079777 source:/home/elia/Scrivania/LSO-SERVER-main/signin.c
+	"signin.h"
+
+1740507493 source:/home/elia/Scrivania/LSO-SERVER-main/conn_conf.c
+	"conn_conf.h"
+
+1740506465 /home/elia/Scrivania/LSO-SERVER-main/session.h
+
+1740506190 source:/home/elia/Scrivania/LSO-SERVER-main/game.c
+

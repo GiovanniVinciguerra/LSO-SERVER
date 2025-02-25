@@ -13,6 +13,7 @@
 #include "login.h"
 #include "structure.h"
 #include "size_define.h"
+#include "session.h"
 
 int init_tcp_server();
 void handle_client(int client_fd);
