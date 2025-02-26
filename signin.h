@@ -7,7 +7,7 @@
 #include "structure.h"
 #include "size_define.h"
 
-struct user* get_user(char* buffer_pt);
-int save(struct user* new_user);
+struct User* get_user(char* buffer_pt);
+int save(struct User* new_user);
 
 #endif

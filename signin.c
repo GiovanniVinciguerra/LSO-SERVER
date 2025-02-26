@@ -1,7 +1,7 @@
 #include "signin.h"
 
-struct user* get_user(char* buffer_pt) {
-    struct user* new_user = (struct user*)malloc(sizeof(struct user));
+struct User* get_user(char* buffer_pt) {
+    struct User* new_user = (struct User*)malloc(sizeof(struct User));
     char* temp_buff = (char*)malloc(sizeof(char) * TEMP_BUFFER_SIZE);
     int copy_check = 0, byte_copy = 0, choice = 0;
 
@@ -55,7 +55,7 @@ struct user* get_user(char* buffer_pt) {
     return new_user;
 }
 
-int save(struct user* new_user) {
+int save(struct User* new_user) {
     FILE* fp = fopen("users.txt", "a+"); // Apre il file in modalità append
     char* buffer_read = (char*)malloc(sizeof(char) * BUFFER_READ_SIZE);
 

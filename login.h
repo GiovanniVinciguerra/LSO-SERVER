@@ -7,8 +7,8 @@
 #include "structure.h"
 #include "size_define.h"
 
-struct user* check_user_exist(char* buffer);
-struct user* get_credentials(char* buffer_pt);
-int find_user(struct user* user_to_find);
+struct User* check_user_exist(char* buffer);
+struct User* get_credentials(char* buffer_pt);
+int find_user(struct User* user_to_find);
 
 #endif

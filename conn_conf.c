@@ -57,7 +57,7 @@ void handle_client(int client_fd) {
             return;
         }
 
-        struct user* new_user = get_user(body_pt);
+        struct User* new_user = get_user(body_pt);
         int save_check = save(new_user);
         // Risposta al client usando save_check
         char* response = NULL;
@@ -76,7 +76,7 @@ void handle_client(int client_fd) {
             return;
         }
 
-        struct user* find_user = check_user_exist(body_pt);
+        struct User* find_user = check_user_exist(body_pt);
         char* response = NULL;
         if(find_user != NULL) {
             //piccola modifica per il login, se l'utente è stato trovato vado a generare un session id e lo inserisco in una lista globale session_list.Tutto definito in session.c
@@ -106,7 +106,7 @@ void handle_client(int client_fd) {
             response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUtente non trovato";
 
         write(client_fd, response, strlen(response));
-    } else if(strncmp(buffer, "POST /new-game", 13)){
+    } else if(strncmp(buffer, "POST /new-game", 14)){
         char* body_pt = find_body(buffer);
         char* username_sfidante = NULL;
         char* username_sfidato = NULL;
@@ -121,7 +121,6 @@ void handle_client(int client_fd) {
               //cosa restituiamo? credo 200 OK senza altro tanto il client già ha i dati della partita
            }
         }
-
     } else {
         // Risposta per richieste non riconosciute
         char *response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";

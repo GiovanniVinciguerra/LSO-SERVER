@@ -5,9 +5,8 @@
 #include <string.h>
 #include "session.h"
 #include "size_define.h"
-Session* session_list = NULL;
 
-#define SESSION_ID_LENGTH 32  // 32 byte = 64 caratteri esadecimali
+Session* session_list = NULL;
 
 //consigliato da chat gpt, l'ho capito fino ad un certo punto
 char* genera_session_id() {
@@ -44,7 +43,7 @@ char* genera_session_id() {
     return session_id;
 }
 
-//Tutti metodi per la creazione e gestione di liste
+// Tutti metodi per la creazione e gestione di liste
 Session* create_session_node(const char* session_id) {
     Session* new_node = (Session*) malloc(sizeof(Session));
     if (!new_node) {
@@ -153,8 +152,5 @@ int check_session_id(char* buffer_pt, char* username_sfidante, char* username_sf
         free(temp_buff);
         return 0;
     }
-
-
-
 }
 

@@ -1,7 +1,7 @@
 #include "login.h"
 
-struct user* check_user_exist(char* buffer) {
-    struct user* user_check = get_credentials(buffer);
+struct User* check_user_exist(char* buffer) {
+    struct User* user_check = get_credentials(buffer);
     int check_exist = find_user(user_check);
 
     if(check_exist == 0)
@@ -12,8 +12,8 @@ struct user* check_user_exist(char* buffer) {
     return NULL;
 }
 
-struct user* get_credentials(char* buffer_pt) {
-    struct user* user_check = (struct user*)malloc(sizeof(struct user));
+struct User* get_credentials(char* buffer_pt) {
+    struct User* user_check = (struct User*)malloc(sizeof(struct User));
     char* temp_buff = (char*)malloc(sizeof(char) * USERNAME_SIZE);
     int copy_check = 0, byte_copy = 0, choice = 0;
 
@@ -55,7 +55,7 @@ struct user* get_credentials(char* buffer_pt) {
     return user_check;
 }
 
-int find_user(struct user* user_to_find) {
+int find_user(struct User* user_to_find) {
     FILE* fp = fopen("users.txt", "r");
     if(fp == NULL) {
         perror("Errore nell'apertura del file users.txt\n");
