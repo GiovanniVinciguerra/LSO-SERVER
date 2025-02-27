@@ -1,5 +1,7 @@
 #include "game.h"
 
+struct Match* matches = NULL;
+
 int save_game(struct Match* match) {
     FILE* fp = fopen("partite.txt", "a+"); // Apre il file in modalità append
 
@@ -9,7 +11,7 @@ int save_game(struct Match* match) {
     }
 
     // Salva la partita sul file
-    fprintf(fp, "%s,%s,%c\n", match -> username_sfidante, match -> username_sfidato, match -> winner);
+    fprintf(fp, "%s,%s,%c\n", match -> player_1, match -> player_2, match -> status);
 
     // Chiude il file
     fclose(fp);
@@ -17,8 +19,8 @@ int save_game(struct Match* match) {
     return 0;
 }
 
-struct Match_Played* get_matches_by_username(char* username) {
-    struct Match_Played* match_played = NULL;
+struct Match* get_matches_by_username(char* username) {
+    struct Match* match_played = NULL;
     FILE* fp = fopen("partite.txt", "r"); // Apre il file in modalità lettura
 
 
@@ -28,15 +30,15 @@ struct Match_Played* get_matches_by_username(char* username) {
     }
 
     char* buffer = (char*)malloc(sizeof(char) * BUFFER_MATCH_SIZE);
-    char* username_sfidante = NULL;
-    char* username_sfidato = NULL;
-    char* winner = NULL;
+    char* player_1 = NULL;
+    char* player_2 = NULL;
+    char* status = NULL;
     while(fscanf(fp, "%s", buffer) != EOF) {
         if(strstr(buffer, username)) { // Controlla che l'utente sia presente
-            username_sfidante = strtok(buffer, ",");
-            username_sfidato = strtok(NULL, ",");
-            winner = strtok(NULL, ",");
-            match_played = add_match_played_node(match_played, create_match_played_node(create_match_node(username_sfidante, username_sfidato, winner[0])));
+            player_1 = strtok(buffer, ",");
+            player_2 = strtok(NULL, ",");
+            status = strtok(NULL, ",");
+            match_played = add_new_match(match_played, create_match_node(player_1, player_2, status[0]));
         }
     }
 
@@ -44,66 +46,82 @@ struct Match_Played* get_matches_by_username(char* username) {
     return match_played;
 }
 
-// Tutti metodi per la creazione e gestione di liste e strutture
-struct Match* create_match_node(char* username_sfidante, char* username_sfidato, char winner) {
-    struct Match* match = (struct Match*)malloc(sizeof(struct Match));
+// Tutti metodi per la creazione e gestione di liste
+struct Match* create_match_node(char* player_1, char* player_2, char status) {
+    struct Match* new_match = (struct Match*)malloc(sizeof(struct Match));
 
-    if(!match)
+    if(!new_match) // Non ha allocato la memoria
         return NULL;
 
-    match -> username_sfidante = strdup(username_sfidante);
-    match -> username_sfidato = strdup(username_sfidato);
-    match -> winner = winner;
-
-    return match;
-}
-
-struct Match_Played* create_match_played_node(struct Match* match) {
-    struct Match_Played* match_played = (struct Match_Played*)malloc(sizeof(struct Match_Played));
-
-    if(!match_played)
+    new_match -> status = status;
+    if(player_1 && player_2) {
+        new_match -> player_1 = strdup(player_1);
+        new_match -> player_2 = strdup(player_2);
+    }
+    else {
+        free(new_match);
         return NULL;
+    }
+    new_match -> next = NULL;
+    new_match -> prev = NULL;
 
-    match_played -> match = match;
-    match_played -> next = NULL;
-
-    return match_played;
+    return new_match;
 }
 
-struct Match_Played* add_match_played_node(struct Match_Played* matches_list, struct Match_Played* match_played) {
-    if(!match_played)
-        return matches_list;
+struct Match* add_new_match(struct Match* match_list, struct Match* new_match) {
+    if(!new_match) // Il nuovo match è NULL
+        return match_list; // Ritorna la lista non modificata
 
-    match_played -> next = matches_list;
-    return match_played;
+    srand(time(NULL)); // Inizializza un seme per permettere di generare numeri casuali
+
+    // Assegna un id solo alle partite appena create e non a quelle che erano state conservate su file
+    if(match_list == matches) {
+        new_match -> match_id = rand();
+        while(find_match_by_id(match_list, new_match -> match_id))
+            new_match -> match_id = rand();
+    }
+
+    new_match -> next = match_list;
+    match_list -> prev = new_match;
+    return new_match;
 }
 
-void free_match_node(struct Match* match) {
-    if(!match)
-        return;
+struct Match* find_match_by_id(struct Match* match_list, int id) {
+    struct Match* find = NULL;
 
-    free(match -> username_sfidante);
-    free(match -> username_sfidato);
-    free(match);
+    while(match_list != NULL) {
+        if(match_list -> match_id == id) {
+            find = match_list;
+            break;
+        }
+        match_list = match_list -> next;
+    }
+
+    return find;
 }
 
-void free_match_played_node(struct Match_Played* match_played) {
-    if(!match_played)
-        return;
+void free_match_node(struct Match* match_list, int id) {
+    struct Match* find_delete = find_match_by_id(match_list, id);
 
-    free_match_node(match_played -> match);
-    free(match_played);
+    if(find_delete) {
+        if(find_delete -> prev)
+            find_delete -> prev -> next = find_delete -> next;
+        if(find_delete -> next)
+            find_delete -> next -> prev = find_delete -> prev;
+        free(find_delete -> player_1);
+        free(find_delete -> player_2);
+        free(find_delete);
+    }
 }
 
-void free_match_played_list(struct Match_Played* matches_list) {
-    if(!matches_list)
-        return;
-
-    struct Match_Played* tmp = matches_list;
+void free_match_list(struct Match* match_list) {
+    struct Match* tmp = match_list;
 
     while(tmp != NULL) {
-        matches_list = matches_list -> next;
-        free_match_played_node(tmp);
-        tmp = matches_list;
+        match_list = match_list -> next;
+        free(tmp -> player_1);
+        free(tmp -> player_2);
+        free(tmp);
+        tmp = match_list;
     }
 }

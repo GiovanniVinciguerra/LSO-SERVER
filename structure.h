@@ -15,17 +15,14 @@ typedef struct Session {
     struct Session* next;     // Puntatore alla sessione successiva
 } Session;
 
-// Struttura che rappresenta una partita disputata
+// Struttura che rappresenta una partita iniziata/conclusa
 struct Match {
-    char* username_sfidante;
-    char* username_sfidato;
-    char winner; // (0 | 1) 0 -> Vince lo sfidante 1 -> Vince lo sfidato
-};
-
-// Struttura che rappresenta tutte le partite giocate da un dato giocatore (username)
-struct Match_Played {
-    struct Match* match;
-    struct Match_Played* next;
+    int match_id; // Identificativo auto incrementale per discriminare i vari match iniziati
+    char* player_1; // Username dello sfidante
+    char* player_2; // Username dello sfidato
+    char status; // (0 | 1 | 2) 0 -> Parità | 1 -> Vince lo sfidante | 2 -> Vince lo sfidato
+    struct Match* next;
+    struct Match* prev;
 };
 
 #endif
