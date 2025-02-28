@@ -1,107 +1,86 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
 #include "session.h"
-#include "size_define.h"
 
-Session* session_list = NULL;
-
-//consigliato da chat gpt, l'ho capito fino ad un certo punto
-char* genera_session_id() {
-    unsigned char buffer[SESSION_ID_LENGTH];
-
-    // Apro /dev/urandom per ottenere numeri casuali sicuri
-    int fd = open("/dev/urandom", O_RDONLY);
-    if (fd < 0) {
-        perror("Errore nell'aprire /dev/urandom");
-        return NULL;
-    }
-
-    // Leggo 32 byte da /dev/urandom
-    ssize_t n = read(fd, buffer, SESSION_ID_LENGTH);
-    close(fd);
-    if (n != SESSION_ID_LENGTH) {
-        perror("Errore nella lettura dei dati casuali");
-        return NULL;
-    }
-
-    // Alloco una stringa per la rappresentazione esadecimale
-    char* session_id = malloc(SESSION_ID_LENGTH * 2 + 1);
-    if (!session_id) {
-        perror("Errore nell'allocazione della memoria");
-        return NULL;
-    }
-
-    // Converto ogni byte in 2 caratteri esadecimali
-    for (int i = 0; i < SESSION_ID_LENGTH; i++) {
-        sprintf(&session_id[i * 2], "%02x", buffer[i]);
-    }
-    session_id[SESSION_ID_LENGTH * 2] = '\0';
-
-    return session_id;
-}
+struct Session* sessions = NULL;
 
 // Tutti metodi per la creazione e gestione di liste
-Session* create_session_node(const char* session_id) {
-    Session* new_node = (Session*) malloc(sizeof(Session));
-    if (!new_node) {
+struct Session* create_session_node(char* username, struct Match* match_play) {
+    struct Session* new_session = (struct Session*)malloc(sizeof(struct Session));
+    if (!new_session) {
+        perror("Impossibile allocare memoria per un nuova sessione\n");
         return NULL;
     }
-    new_node->session_id = strdup(session_id); //Questo metodo fa una copia del contenuto puntanto da session_id, quindi una volta utilizzato può essere fatta la free di session_id
-    new_node->next = NULL;
-    return new_node;
+
+    srand(time(NULL));
+
+    new_session -> session_id = rand();
+    while(find_session_by_id(sessions, new_session -> session_id))
+        new_session -> session_id = rand();
+
+    if(username)
+        new_session -> username = strdup(username);
+    else {
+        perror("Username non valido (NULL)\n");
+        free(new_session);
+        return NULL;
+    }
+
+    new_session -> match_play = match_play;
+    new_session -> next = NULL;
+    new_session -> prev = NULL;
+
+    return new_session;
 }
 
-void add_session(Session** head, const char* session_id) {
-    Session* new_node = create_session_node(session_id);
-    if (!new_node)
-        return;
-    new_node->next = *head;
-    *head = new_node;
+struct Session* add_session(struct Session* session_list, struct Session* new_session) {
+    if(!new_session)
+        return session_list;
+
+    new_session -> next = session_list;
+    session_list -> prev = new_session;
+
+    return new_session;
 }
 
-Session* find_session(Session* head, const char* session_id) {
-    while (head != NULL) {
-        if (strcmp(head->session_id, session_id) == 0) {
-            return head;
+struct Session* find_session_by_id(struct Session* session_list, int session_id) {
+    struct Session* find = NULL;
+
+    while(session_list != NULL) {
+        if(session_list -> session_id == session_id) {
+            find = session_list;
+            break;
         }
-        head = head->next;
+        session_list = session_list -> next;
     }
-    return NULL;
+
+    return find;
 }
 
-void remove_session(Session** head, const char* session_id) {
-    Session* current = *head;
-    Session* prev = NULL;
-    while (current != NULL) {
-        if (strcmp(current->session_id, session_id) == 0) {
-            if (prev == NULL) {
-                *head = current->next;
-            } else {
-                prev->next = current->next;
-            }
-            free(current->session_id);
-            free(current);
-            return;
-        }
-        prev = current;
-        current = current->next;
+struct Session* remove_session_node(struct Session* session_list, int session_id) {
+    // Dai un'occhiata Elia che qui non mi convince l'eliminazione fatta in questo modo
+    struct Session* find_delete = find_session_by_id(session_list, session_id);
+
+    if(find_delete) {
+        if(find_delete -> prev)
+            find_delete -> prev -> next = find_delete -> next;
+        if(find_delete -> next)
+            find_delete -> next -> prev = find_delete -> prev;
+        free(find_delete -> username);
+        free_match_node(find_delete -> match_play, find_delete -> match_play -> match_id);
+        free(find_delete);
     }
+
+    return session_list;
 }
 
-void free_sessions(Session* head) {
-    while (head != NULL) {
-        Session* temp = head;
-        head = head->next;
-        free(temp->session_id);
-        free(temp);
-    }
+void free_session_list(struct Session* session_list) {
+    // TODO
 }
+
+
 
 //restituisco un intero per capire se l'utente è correttamente loggato, in caso positivo in conn_conf controllo che le stringhe puntate sono correttamente valorizzate
-int check_session_id(char* buffer_pt, char* username_sfidante, char* username_sfidato) {
+// Modificare
+/*int check_session_id(char* buffer_pt, char* username_sfidante, char* username_sfidato) {
     char* session_id = (char*)malloc(sizeof(char) * SESSION_ID_LENGTH);
     username_sfidante = (char*)malloc(sizeof(char) * USERNAME_SIZE);
     username_sfidato = (char*)malloc(sizeof(char) * USERNAME_SIZE);
@@ -152,5 +131,5 @@ int check_session_id(char* buffer_pt, char* username_sfidante, char* username_sf
         free(temp_buff);
         return 0;
     }
-}
+}*/
 

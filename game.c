@@ -11,7 +11,7 @@ int save_game(struct Match* match) {
     }
 
     // Salva la partita sul file
-    fprintf(fp, "%s,%s,%c\n", match -> player_1, match -> player_2, match -> status);
+    fprintf(fp, "%s,%s,%c\n", match -> player_1, match -> player_2, match -> result);
 
     // Chiude il file
     fclose(fp);
@@ -32,13 +32,14 @@ struct Match* get_matches_by_username(char* username) {
     char* buffer = (char*)malloc(sizeof(char) * BUFFER_MATCH_SIZE);
     char* player_1 = NULL;
     char* player_2 = NULL;
-    char* status = NULL;
+    char* result = NULL;
     while(fscanf(fp, "%s", buffer) != EOF) {
         if(strstr(buffer, username)) { // Controlla che l'utente sia presente
             player_1 = strtok(buffer, ",");
             player_2 = strtok(NULL, ",");
-            status = strtok(NULL, ",");
-            match_played = add_new_match(match_played, create_match_node(player_1, player_2, status[0]));
+            result = strtok(NULL, ",");
+            match_played = add_new_match(match_played, create_match_node(player_1, result[0]));
+            match_played -> player_2 = strdup(player_2);
         }
     }
 
@@ -47,23 +48,23 @@ struct Match* get_matches_by_username(char* username) {
 }
 
 // Tutti metodi per la creazione e gestione di liste
-struct Match* create_match_node(char* player_1, char* player_2, char status) {
+struct Match* create_match_node(char* player_1, char result) {
     struct Match* new_match = (struct Match*)malloc(sizeof(struct Match));
 
     if(!new_match) // Non ha allocato la memoria
         return NULL;
 
-    new_match -> status = status;
-    if(player_1 && player_2) {
+    new_match -> result = result;
+    new_match -> status = '2';
+    if(player_1)
         new_match -> player_1 = strdup(player_1);
-        new_match -> player_2 = strdup(player_2);
-    }
     else {
         free(new_match);
         return NULL;
     }
     new_match -> next = NULL;
     new_match -> prev = NULL;
+    new_match -> player_2 = NULL;
 
     return new_match;
 }
@@ -72,7 +73,7 @@ struct Match* add_new_match(struct Match* match_list, struct Match* new_match) {
     if(!new_match) // Il nuovo match è NULL
         return match_list; // Ritorna la lista non modificata
 
-    srand(time(NULL)); // Inizializza un seme per permettere di generare numeri casuali
+    srand(time(NULL)); // Inizializza un seme per permettere di generare numeri pseudo-casuali
 
     // Assegna un id solo alle partite appena create e non a quelle che erano state conservate su file
     if(match_list == matches) {
@@ -86,11 +87,11 @@ struct Match* add_new_match(struct Match* match_list, struct Match* new_match) {
     return new_match;
 }
 
-struct Match* find_match_by_id(struct Match* match_list, int id) {
+struct Match* find_match_by_id(struct Match* match_list, int match_id) {
     struct Match* find = NULL;
 
     while(match_list != NULL) {
-        if(match_list -> match_id == id) {
+        if(match_list -> match_id == match_id) {
             find = match_list;
             break;
         }
@@ -100,8 +101,8 @@ struct Match* find_match_by_id(struct Match* match_list, int id) {
     return find;
 }
 
-void free_match_node(struct Match* match_list, int id) {
-    struct Match* find_delete = find_match_by_id(match_list, id);
+void free_match_node(struct Match* match_list, int match_id) {
+    struct Match* find_delete = find_match_by_id(match_list, match_id);
 
     if(find_delete) {
         if(find_delete -> prev)
