@@ -38,13 +38,48 @@ struct Match* get_matches_by_username(char* username) {
             player_1 = strtok(buffer, ",");
             player_2 = strtok(NULL, ",");
             result = strtok(NULL, ",");
-            match_played = add_new_match(match_played, create_match_node(player_1, result[0]));
+            match_played = add_new_match(match_played, create_match_node(player_1, result[0]), false);
             match_played -> player_2 = strdup(player_2);
         }
     }
 
     free(buffer);
     return match_played;
+}
+
+char** get_info_game(char* buffer_pt) {
+    char** info = (char**)malloc(sizeof(char*) * 2);
+    info[0] = (char*)malloc(sizeof(char) * SESSION_ID_SIZE);
+    info[1] = (char*)malloc(sizeof(char) * USERNAME_SIZE);
+    int copy_check = 0, byte_copy = 0, choice = 0;
+
+    while(*buffer_pt != '}') {
+        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
+            copy_check = 1;
+            buffer_pt+=2;
+        } else if(copy_check == 0) {
+            buffer_pt++;
+            continue;
+        }
+
+        if(copy_check == 1) {
+            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 1)) {
+                copy_check = 0;
+                buffer_pt+=2;
+                info[1][byte_copy] = '\0';
+                if(choice == 0)
+                    strcpy(info[0], info[1]);
+                byte_copy = 0;
+                choice++;
+            } else {
+                info[1][byte_copy] = *buffer_pt;
+                buffer_pt++;
+                byte_copy++;
+            }
+        }
+    }
+
+    return info;
 }
 
 // Tutti metodi per la creazione e gestione di liste
@@ -69,14 +104,14 @@ struct Match* create_match_node(char* player_1, char result) {
     return new_match;
 }
 
-struct Match* add_new_match(struct Match* match_list, struct Match* new_match) {
+struct Match* add_new_match(struct Match* match_list, struct Match* new_match, bool check) {
     if(!new_match) // Il nuovo match è NULL
         return match_list; // Ritorna la lista non modificata
 
     srand(time(NULL)); // Inizializza un seme per permettere di generare numeri pseudo-casuali
 
     // Assegna un id solo alle partite appena create e non a quelle che erano state conservate su file
-    if(match_list == matches) {
+    if(check) {
         new_match -> match_id = rand();
         while(find_match_by_id(match_list, new_match -> match_id))
             new_match -> match_id = rand();
@@ -101,28 +136,44 @@ struct Match* find_match_by_id(struct Match* match_list, int match_id) {
     return find;
 }
 
-void free_match_node(struct Match* match_list, int match_id) {
+struct Match* free_match_node(struct Match* match_list, int match_id) {
     struct Match* find_delete = find_match_by_id(match_list, match_id);
 
     if(find_delete) {
         if(find_delete -> prev)
             find_delete -> prev -> next = find_delete -> next;
+        else
+            match_list = find_delete -> next;
         if(find_delete -> next)
             find_delete -> next -> prev = find_delete -> prev;
         free(find_delete -> player_1);
         free(find_delete -> player_2);
         free(find_delete);
     }
+
+    return match_list;
 }
 
 void free_match_list(struct Match* match_list) {
     struct Match* tmp = match_list;
 
     while(tmp != NULL) {
-        match_list = match_list -> next;
+        match_list = tmp -> next;
         free(tmp -> player_1);
         free(tmp -> player_2);
         free(tmp);
         tmp = match_list;
     }
+}
+
+int match_list_len(struct Match* match_list) {
+    int count = 0;
+    struct Match* tmp = match_list;
+
+    while(tmp != NULL) {
+        count++;
+        tmp = tmp -> next;
+    }
+
+    return count;
 }

@@ -84,33 +84,58 @@ void handle_client(int client_fd) {
             sessions = add_session(sessions, create_session_node(find_user -> username, NULL));
 
             response = (char*)malloc(sizeof(char) * BUFFER_SIZE);
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{");
-            strcat(response, "\n\"nome\":\"");
-            strcat(response, find_user -> name);
-            strcat(response, "\",\n");
-            strcat(response, "\"surname\":\"");
-            strcat(response, find_user -> surname);
-            strcat(response, "\",\n");
-            strcat(response, "\n\"email\":\"");
-            strcat(response, find_user -> email);
-            strcat(response, "\",\n");
+            response = strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{");
+            response = strcat(response, "\n\"nome\":\"");
+            response = strcat(response, find_user -> name);
+            response = strcat(response, "\",\n");
+            response = strcat(response, "\"surname\":\"");
+            response = strcat(response, find_user -> surname);
+            response = strcat(response, "\",\n");
+            response = strcat(response, "\n\"email\":\"");
+            response = strcat(response, find_user -> email);
+            response = strcat(response, "\",\n");
             char* buffer = (char*)malloc(sizeof(char) * 11);
             sprintf(buffer, "%d", sessions -> session_id);
-            strcat(response, "\"session_id\":\"");
-            strcat(response, buffer);
-            strcat(response, "\"\n}");
-
+            response = strcat(response, "\"session_id\":\"");
+            response = strcat(response, buffer);
+            response = strcat(response, "\"\n}");
             free(buffer);
-            free(response);
         } else
             response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUtente non trovato";
 
         write(client_fd, response, strlen(response));
+        free(response);
     } else if(strncmp(buffer, "POST /new-game", 14)){
+        char* body_pt = find_body(buffer);
+        char* response = NULL;
+        if(body_pt == NULL) {
+            perror("Body non trovato");
+            return;
+        }
 
+        char** info_game = get_info_game(body_pt);
+        if(check_session_exist(info_game[1], atoi(info_game[0]))) {
+            // TODO Inizia partita
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+        write(client_fd, response, strlen(response));
+    } else if(strncmp(buffer, "POST /stat", 10)) {
+        char* body_pt = find_body(buffer);
+        char* response = NULL;
+        if(body_pt == NULL) {
+            perror("Body non trovato");
+            return;
+        }
+
+        char** info_game = get_info_game(body_pt);
+        if(check_session_exist(info_game[1], atoi(info_game[0]))) {
+            struct Match* match_list = get_matches_by_username(info_game[1]);
+            // TODO CJSON
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
     } else {
         // Risposta per richieste non riconosciute
-        char *response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";
+        char* response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";
         write(client_fd, response, strlen(response));
     }
 }

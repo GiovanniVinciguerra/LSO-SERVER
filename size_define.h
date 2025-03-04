@@ -6,7 +6,7 @@
 #define BUFFER_READ_SIZE 335
 #define USERNAME_SIZE 16
 #define PASSWORD_SIZE 16
-#define SESSION_ID_LENGTH 32  // 32 byte = 64 caratteri esadecimali
+#define SESSION_ID_SIZE 6 // Dimensione in caratteri del numero 32766 (range massimo) ottenuto dalla funzione rand
 #define BUFFER_MATCH_SIZE 34
 
 #endif

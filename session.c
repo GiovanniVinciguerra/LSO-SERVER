@@ -13,7 +13,7 @@ struct Session* create_session_node(char* username, struct Match* match_play) {
     srand(time(NULL));
 
     new_session -> session_id = rand();
-    while(find_session_by_id(sessions, new_session -> session_id))
+    while(find_session_by_id(sessions, new_session -> session_id)) // Controlla l'unicità del session id randomico
         new_session -> session_id = rand();
 
     if(username)
@@ -56,16 +56,16 @@ struct Session* find_session_by_id(struct Session* session_list, int session_id)
 }
 
 struct Session* remove_session_node(struct Session* session_list, int session_id) {
-    // Dai un'occhiata Elia che qui non mi convince l'eliminazione fatta in questo modo
     struct Session* find_delete = find_session_by_id(session_list, session_id);
 
     if(find_delete) {
         if(find_delete -> prev)
             find_delete -> prev -> next = find_delete -> next;
+        else
+            session_list = find_delete -> next;
         if(find_delete -> next)
             find_delete -> next -> prev = find_delete -> prev;
         free(find_delete -> username);
-        free_match_node(find_delete -> match_play, find_delete -> match_play -> match_id);
         free(find_delete);
     }
 
@@ -73,63 +73,21 @@ struct Session* remove_session_node(struct Session* session_list, int session_id
 }
 
 void free_session_list(struct Session* session_list) {
-    // TODO
+    struct Session* tmp = session_list;
+
+    while(tmp != NULL) {
+        session_list = tmp -> next;
+        free(tmp -> username);
+        free(tmp);
+        tmp = session_list;
+    }
 }
 
+struct Session* check_session_exist(char* username, int session_id) {
+    struct Session* find = find_session_by_id(sessions, session_id);
 
+    if(!find || !strcmp(find -> username, username) == 0)
+        return NULL;
 
-//restituisco un intero per capire se l'utente è correttamente loggato, in caso positivo in conn_conf controllo che le stringhe puntate sono correttamente valorizzate
-// Modificare
-/*int check_session_id(char* buffer_pt, char* username_sfidante, char* username_sfidato) {
-    char* session_id = (char*)malloc(sizeof(char) * SESSION_ID_LENGTH);
-    username_sfidante = (char*)malloc(sizeof(char) * USERNAME_SIZE);
-    username_sfidato = (char*)malloc(sizeof(char) * USERNAME_SIZE);
-    char* temp_buff = (char*)malloc(sizeof(char) * USERNAME_SIZE);
-    int copy_check = 0, byte_copy = 0, choice = 0;
-
-    while(*buffer_pt != '}') {
-        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
-            copy_check = 1;
-            buffer_pt+=2;
-        } else if(copy_check == 0) {
-            buffer_pt++;
-            continue;
-        }
-
-        if(copy_check == 1) {
-            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 2)) {
-                copy_check = 0;
-                buffer_pt+=2;
-                temp_buff[byte_copy] = '\0';
-                switch(choice) {
-                    case 0:
-                        strcpy(session_id, temp_buff);
-                        break;
-                    case 1:
-                        strcpy(username_sfidante, temp_buff);
-                        break;
-                    case 2:
-                        strcpy(username_sfidato, temp_buff);
-                        break;
-                }
-                byte_copy = 0;
-                choice++;
-            } else {
-                temp_buff[byte_copy] = *buffer_pt;
-                buffer_pt++;
-                byte_copy++;
-            }
-        }
-    }
-
-    Session* session =  find_session(session_list, session_id);
-
-    if(session == NULL){
-        free(temp_buff);
-        return -1;
-    } else {
-        free(temp_buff);
-        return 0;
-    }
-}*/
-
+    return find;
+}

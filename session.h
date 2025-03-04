@@ -10,7 +10,8 @@
 #include "size_define.h"
 
 extern struct Session* sessions;
-
+// Controlla che la sessione sia effettivamente collegata all'utente in modo da certificare una corretta autenticazione
+struct Session* check_session_exist(char* username, int session_id);
 // Funzioni di gestione di liste
 struct Session* create_session_node(char* username, struct Match* match_play);
 struct Session* add_session(struct Session* session_list, struct Session* new_session);
