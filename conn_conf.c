@@ -49,7 +49,7 @@ void handle_client(int client_fd) {
     buffer[bytes_read] = '\0';
     printf("Richiesta ricevuta:\n%s\n", buffer);
 
-    // Controlla se la richiesta è una POST per il signing
+    // Gestione delle varie richieste
     if (strncmp(buffer, "POST /signin", 12) == 0) {
         char* body_pt = find_body(buffer);
         if(body_pt == NULL) {
@@ -68,7 +68,9 @@ void handle_client(int client_fd) {
         else
             response = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nUtente non registrato";
 
+        printf("Signin Response\n%s\n", response);
         write(client_fd, response, strlen(response));
+        free_user_node(new_user);
     } else if (strncmp(buffer, "POST /login", 10) == 0) {
         char* body_pt = find_body(buffer);
 
@@ -82,29 +84,24 @@ void handle_client(int client_fd) {
         if(find_user != NULL) {
             // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
             sessions = add_session(sessions, create_session_node(find_user -> username, NULL));
+            // Allega i restanti dati dell'utente al response da mandare al client
+            char* json_string = create_user_json_object(find_user);
+            int json_string_len = strlen(json_string);
+            response = (char*)malloc(sizeof(char) * (json_string_len + 53));
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, json_string);
 
-            response = (char*)malloc(sizeof(char) * BUFFER_SIZE);
-            response = strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{");
-            response = strcat(response, "\n\"nome\":\"");
-            response = strcat(response, find_user -> name);
-            response = strcat(response, "\",\n");
-            response = strcat(response, "\"surname\":\"");
-            response = strcat(response, find_user -> surname);
-            response = strcat(response, "\",\n");
-            response = strcat(response, "\n\"email\":\"");
-            response = strcat(response, find_user -> email);
-            response = strcat(response, "\",\n");
-            char* buffer = (char*)malloc(sizeof(char) * 11);
-            sprintf(buffer, "%d", sessions -> session_id);
-            response = strcat(response, "\"session_id\":\"");
-            response = strcat(response, buffer);
-            response = strcat(response, "\"\n}");
-            free(buffer);
-        } else
+            printf("Login Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(json_string);
+            free(response);
+        } else {
             response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUtente non trovato";
+            write(client_fd, response, strlen(response));
+            printf("Login Response\n%s\n", response);
+        }
 
-        write(client_fd, response, strlen(response));
-        free(response);
+        free_user_node(find_user);
     } else if(strncmp(buffer, "POST /new-game", 14)){
         char* body_pt = find_body(buffer);
         char* response = NULL;
@@ -113,12 +110,22 @@ void handle_client(int client_fd) {
             return;
         }
 
-        char** info_game = get_info_game(body_pt);
-        if(check_session_exist(info_game[1], atoi(info_game[0]))) {
+        char** auth = get_authority_credentials(body_pt);
+        if(check_session_exist(auth[1], atoi(auth[0]))) {
             // TODO Inizia partita
-        } else
+
+            printf("New-Game Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(response);
+        } else {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
-        write(client_fd, response, strlen(response));
+            printf("New-Game Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+        }
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
     } else if(strncmp(buffer, "POST /stat", 10)) {
         char* body_pt = find_body(buffer);
         char* response = NULL;
@@ -127,15 +134,34 @@ void handle_client(int client_fd) {
             return;
         }
 
-        char** info_game = get_info_game(body_pt);
-        if(check_session_exist(info_game[1], atoi(info_game[0]))) {
-            struct Match* match_list = get_matches_by_username(info_game[1]);
-            // TODO CJSON
-        } else
+        char** auth = get_authority_credentials(body_pt);
+        if(check_session_exist(auth[1], atoi(auth[0]))) {
+            struct Match* match_list = get_matches_by_username(auth[1]);
+            char* json_string = create_match_json_array(match_list);
+            int json_string_len = strlen(json_string);
+
+            response = (char*)malloc(sizeof(char) * (json_string_len + 53));
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, json_string);
+
+            printf("Stat Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(json_string);
+            free(response);
+            free_match_list(match_list);
+        } else {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            printf("Stat Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+        }
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
     } else {
         // Risposta per richieste non riconosciute
         char* response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";
+        printf("Method Not Allowed\n%s\n", response);
         write(client_fd, response, strlen(response));
     }
 }
@@ -145,4 +171,16 @@ char* find_body(char* buffer) {
     body_pt = strstr(buffer, "{");
 
     return body_pt;
+}
+
+void free_user_node(struct User* user) {
+    if(!user)
+        return;
+
+    free(user -> email);
+    free(user -> name);
+    free(user -> password);
+    free(user -> surname);
+    free(user -> username);
+    free(user);
 }

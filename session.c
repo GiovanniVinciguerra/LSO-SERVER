@@ -91,3 +91,14 @@ struct Session* check_session_exist(char* username, int session_id) {
 
     return find;
 }
+
+int session_list_len(struct Session* session_list) {
+    int count = 0;
+
+    while(session_list != NULL) {
+        count++;
+        session_list = session_list -> next;
+    }
+
+    return count;
+}

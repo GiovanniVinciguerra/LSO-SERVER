@@ -15,9 +15,11 @@
 #include "size_define.h"
 #include "session.h"
 #include "game.h"
+#include "service.h"
 
 int init_tcp_server();
 void handle_client(int client_fd);
 char* find_body(char* buffer);
+void free_user_node(struct User* user);
 
 #endif

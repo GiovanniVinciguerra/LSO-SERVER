@@ -47,41 +47,6 @@ struct Match* get_matches_by_username(char* username) {
     return match_played;
 }
 
-char** get_info_game(char* buffer_pt) {
-    char** info = (char**)malloc(sizeof(char*) * 2);
-    info[0] = (char*)malloc(sizeof(char) * SESSION_ID_SIZE);
-    info[1] = (char*)malloc(sizeof(char) * USERNAME_SIZE);
-    int copy_check = 0, byte_copy = 0, choice = 0;
-
-    while(*buffer_pt != '}') {
-        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
-            copy_check = 1;
-            buffer_pt+=2;
-        } else if(copy_check == 0) {
-            buffer_pt++;
-            continue;
-        }
-
-        if(copy_check == 1) {
-            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 1)) {
-                copy_check = 0;
-                buffer_pt+=2;
-                info[1][byte_copy] = '\0';
-                if(choice == 0)
-                    strcpy(info[0], info[1]);
-                byte_copy = 0;
-                choice++;
-            } else {
-                info[1][byte_copy] = *buffer_pt;
-                buffer_pt++;
-                byte_copy++;
-            }
-        }
-    }
-
-    return info;
-}
-
 // Tutti metodi per la creazione e gestione di liste
 struct Match* create_match_node(char* player_1, char result) {
     struct Match* new_match = (struct Match*)malloc(sizeof(struct Match));
@@ -168,11 +133,10 @@ void free_match_list(struct Match* match_list) {
 
 int match_list_len(struct Match* match_list) {
     int count = 0;
-    struct Match* tmp = match_list;
 
-    while(tmp != NULL) {
+    while(match_list != NULL) {
         count++;
-        tmp = tmp -> next;
+        match_list = match_list -> next;
     }
 
     return count;

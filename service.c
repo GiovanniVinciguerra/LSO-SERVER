@@ -1,0 +1,177 @@
+#include "service.h"
+
+char** get_authority_credentials(char* buffer_pt) {
+    char** info = (char**)malloc(sizeof(char*) * 2);
+    info[0] = (char*)malloc(sizeof(char) * SESSION_ID_SIZE);
+    info[1] = (char*)malloc(sizeof(char) * USERNAME_SIZE);
+    int copy_check = 0, byte_copy = 0, choice = 0;
+
+    while(*buffer_pt != '}') {
+        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
+            copy_check = 1;
+            buffer_pt+=2;
+        } else if(copy_check == 0) {
+            buffer_pt++;
+            continue;
+        }
+
+        if(copy_check == 1) {
+            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 1)) {
+                copy_check = 0;
+                buffer_pt+=2;
+                info[1][byte_copy] = '\0';
+                if(choice == 0)
+                    strcpy(info[0], info[1]);
+                byte_copy = 0;
+                choice++;
+            } else {
+                info[1][byte_copy] = *buffer_pt;
+                buffer_pt++;
+                byte_copy++;
+            }
+        }
+    }
+
+    return info;
+}
+
+struct User* get_credentials(char* buffer_pt) {
+    struct User* user_check = (struct User*)malloc(sizeof(struct User));
+    char* temp_buff = (char*)malloc(sizeof(char) * USERNAME_SIZE);
+    int copy_check = 0, byte_copy = 0, choice = 0;
+
+    while(*buffer_pt != '}') {
+        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
+            copy_check = 1;
+            buffer_pt+=2;
+        } else if(copy_check == 0) {
+            buffer_pt++;
+            continue;
+        }
+
+        if(copy_check == 1) {
+            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 1)) {
+                copy_check = 0;
+                buffer_pt+=2;
+                temp_buff[byte_copy] = '\0';
+                switch(choice) {
+                    case 0:
+                        user_check -> username = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(user_check -> username, temp_buff);
+                        break;
+                    case 1:
+                        user_check -> password = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(user_check -> password, temp_buff);
+                        break;
+                }
+                byte_copy = 0;
+                choice++;
+            } else {
+                temp_buff[byte_copy] = *buffer_pt;
+                buffer_pt++;
+                byte_copy++;
+            }
+        }
+    }
+
+    free(temp_buff);
+    return user_check;
+}
+
+struct User* get_user(char* buffer_pt) {
+    struct User* new_user = (struct User*)malloc(sizeof(struct User));
+    char* temp_buff = (char*)malloc(sizeof(char) * TEMP_BUFFER_SIZE);
+    int copy_check = 0, byte_copy = 0, choice = 0;
+
+    while(*buffer_pt != '}') {
+        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
+            copy_check = 1;
+            buffer_pt+=2;
+        } else if(copy_check == 0) {
+            buffer_pt++;
+            continue;
+        }
+
+        if(copy_check == 1) {
+            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 4)) {
+                copy_check = 0;
+                buffer_pt+=2;
+                temp_buff[byte_copy] = '\0';
+                switch(choice) {
+                    case 0:
+                        new_user -> name = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(new_user -> name, temp_buff);
+                        break;
+                    case 1:
+                        new_user -> surname = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(new_user -> surname, temp_buff);
+                        break;
+                    case 2:
+                        new_user -> username = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(new_user -> username, temp_buff);
+                        break;
+                    case 3:
+                        new_user -> email = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(new_user -> email, temp_buff);
+                        break;
+                    case 4:
+                        new_user -> password = (char*)malloc(sizeof(char) * byte_copy);
+                        strcpy(new_user -> password, temp_buff);
+                        break;
+                }
+                byte_copy = 0;
+                choice++;
+            } else {
+                temp_buff[byte_copy] = *buffer_pt;
+                buffer_pt++;
+                byte_copy++;
+            }
+        }
+    }
+
+    free(temp_buff);
+    return new_user;
+}
+
+char* create_user_json_object(struct User* user) {
+    char* json_string = NULL;
+
+    // Creazione dell'oggetto JSON
+    cJSON* json_object = cJSON_CreateObject();
+
+    // Aggiunta dati all'oggetto JSON
+    cJSON_AddStringToObject(json_object, "name", user -> name);
+    cJSON_AddStringToObject(json_object, "surname", user -> surname);
+    cJSON_AddStringToObject(json_object, "email", user -> email);
+
+    // Da oggetto JSON a Stringa
+    json_string = cJSON_Print(json_object);
+
+    // Pulizia oggetto JSON
+    cJSON_Delete(json_object);
+
+    return json_string;
+}
+
+char* create_match_json_array(struct Match* match_list) {
+    char* json_string = NULL;
+
+    cJSON* json_array = cJSON_CreateArray();
+
+    while(match_list != NULL) {
+        cJSON* json_object = cJSON_CreateObject();
+
+        cJSON_AddStringToObject(json_object, "player_1", match_list -> player_1);
+        cJSON_AddStringToObject(json_object, "player_2", match_list -> player_2);
+        cJSON_AddStringToObject(json_object, "result", &(match_list -> result));
+
+        cJSON_AddItemToArray(json_array, json_object);
+        match_list = match_list -> next;
+    }
+
+    json_string = cJSON_Print(json_array);
+
+    cJSON_Delete(json_array);
+
+    return json_string;
+}
