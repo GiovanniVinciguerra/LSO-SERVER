@@ -133,8 +133,11 @@ struct User* get_user(char* buffer_pt) {
     return new_user;
 }
 
-char* create_user_json_object(struct User* user) {
+char* create_user_json_object(struct User* user, int session_id) {
     char* json_string = NULL;
+
+    char* session_id_string = (char*)malloc(sizeof(char) * SESSION_ID_SIZE);
+    sprintf(session_id_string, "%d", session_id);
 
     // Creazione dell'oggetto JSON
     cJSON* json_object = cJSON_CreateObject();
@@ -143,12 +146,14 @@ char* create_user_json_object(struct User* user) {
     cJSON_AddStringToObject(json_object, "name", user -> name);
     cJSON_AddStringToObject(json_object, "surname", user -> surname);
     cJSON_AddStringToObject(json_object, "email", user -> email);
+    cJSON_AddStringToObject(json_object, "session_id", session_id_string);
 
     // Da oggetto JSON a Stringa
     json_string = cJSON_Print(json_object);
 
     // Pulizia oggetto JSON
     cJSON_Delete(json_object);
+    free(session_id_string);
 
     return json_string;
 }
