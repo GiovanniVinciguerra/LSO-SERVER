@@ -87,7 +87,7 @@ void handle_client(int client_fd) {
             // Allega i restanti dati dell'utente al response da mandare al client
             char* json_string = create_user_json_object(find_user);
             int json_string_len = strlen(json_string);
-            response = (char*)malloc(sizeof(char) * (json_string_len + 53));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
             strcat(response, json_string);
 
