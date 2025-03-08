@@ -102,7 +102,7 @@ void handle_client(int client_fd) {
         }
 
         free_user_node(find_user);
-    } else if(strncmp(buffer, "POST /new-game", 14)){
+    } else if(strncmp(buffer, "POST /new-game", 14) == 0){
         char* body_pt = find_body(buffer);
         char* response = NULL;
         if(body_pt == NULL) {
@@ -126,7 +126,7 @@ void handle_client(int client_fd) {
         free(auth[0]);
         free(auth[1]);
         free(auth);
-    } else if(strncmp(buffer, "POST /stat", 10)) {
+    } else if(strncmp(buffer, "POST /stat", 10) == 0) {
         char* body_pt = find_body(buffer);
         char* response = NULL;
         if(body_pt == NULL) {
