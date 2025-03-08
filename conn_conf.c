@@ -85,9 +85,10 @@ void handle_client(int client_fd) {
             // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
             sessions = add_session(sessions, create_session_node(find_user -> username, NULL));
             // Allega i restanti dati dell'utente al response da mandare al client
-            char* json_string = create_user_json_object(find_user);
+            char* json_string = create_user_json_object(find_user, sessions -> session_id);
             int json_string_len = strlen(json_string);
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response[0] = '\0';
             strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
             strcat(response, json_string);
 
@@ -141,6 +142,7 @@ void handle_client(int client_fd) {
             int json_string_len = strlen(json_string);
 
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response[0] = '\0';
             strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
             strcat(response, json_string);
 

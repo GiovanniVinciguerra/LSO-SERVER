@@ -22,17 +22,17 @@ int find_user(struct User* user_to_find) {
     }
 
     char* buffer = (char*)malloc(sizeof(char) * BUFFER_READ_SIZE);
-    char *name = NULL, *surname = NULL, *email = NULL;
+    char* token = NULL;
     while(fscanf(fp, "%s", buffer) != EOF) {
         if(strstr(buffer, user_to_find -> username) != NULL)
             if(strstr(buffer, user_to_find -> password) != NULL) {
-                name = strtok(buffer, ",");
-                user_to_find -> name = name;
-                surname = strtok(NULL, ",");
-                user_to_find -> surname = surname;
+                token = strtok(buffer, ",");
+                user_to_find -> name = strdup(token);
+                token = strtok(NULL, ",");
+                user_to_find -> surname = strdup(token);
                 strtok(NULL, ",");
-                email = strtok(NULL, ",");
-                user_to_find -> email = email;
+                token = strtok(NULL, ",");
+                user_to_find -> email = strdup(token);
 
                 check_find = 0;
                 break;

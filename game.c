@@ -83,7 +83,8 @@ struct Match* add_new_match(struct Match* match_list, struct Match* new_match, b
     }
 
     new_match -> next = match_list;
-    match_list -> prev = new_match;
+    if(match_list)
+        match_list -> prev = new_match;
     return new_match;
 }
 

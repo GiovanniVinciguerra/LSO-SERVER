@@ -36,7 +36,8 @@ struct Session* add_session(struct Session* session_list, struct Session* new_se
         return session_list;
 
     new_session -> next = session_list;
-    session_list -> prev = new_session;
+    if(session_list)
+        session_list -> prev = new_session;
 
     return new_session;
 }
