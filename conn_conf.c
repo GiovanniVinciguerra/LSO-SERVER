@@ -140,7 +140,7 @@ void handle_client(int client_fd) {
             char* json_string = create_match_json_array(match_list);
             int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 53));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
             strcat(response, json_string);
 
