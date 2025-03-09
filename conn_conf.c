@@ -113,10 +113,11 @@ void handle_client(int client_fd) {
 
         char** auth = get_authority_credentials(body_pt);
         if(check_session_exist(auth[1], atoi(auth[0]))) {
-            /* Controlla se esiste un match in attesa altrimenti lo crea (logica del server).
+            /* Controlla se esiste un match in attesa e se è diverso dal giocatore che fa richiesta (gestione partite multiple)
+               altrimenti lo crea (logica del server).
                player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
                player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
-            if(matches)
+            if(matches && strcasecmp(matches -> player_1, auth[1]) != 0)
                 // Il client host della partita potrà sapere se c'è stata una modifica per il suo match in attesa.
                 matches -> player_2 = strdup(auth[1]);
             else
