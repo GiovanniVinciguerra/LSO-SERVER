@@ -51,20 +51,23 @@ struct Match* get_matches_by_username(char* username) {
 struct Match* create_match_node(char* player_1, char result) {
     struct Match* new_match = (struct Match*)malloc(sizeof(struct Match));
 
-    if(!new_match) // Non ha allocato la memoria
+    if(!new_match) { // Non ha allocato la memoria
+        perror("Impossibile allocare memoria per un nuovo match\n");
         return NULL;
+    }
 
     new_match -> result = result;
     new_match -> status = '2';
     if(player_1)
         new_match -> player_1 = strdup(player_1);
     else {
+        perror("Player_1 non valido (NULL)\n");
         free(new_match);
         return NULL;
     }
+    new_match -> player_2 = NULL;
     new_match -> next = NULL;
     new_match -> prev = NULL;
-    new_match -> player_2 = NULL;
 
     return new_match;
 }

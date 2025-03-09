@@ -136,6 +136,7 @@ struct User* get_user(char* buffer_pt) {
 char* create_user_json_object(struct User* user, int session_id) {
     char* json_string = NULL;
 
+    // Converte INT in STRING
     char* session_id_string = (char*)malloc(sizeof(char) * SESSION_ID_SIZE);
     sprintf(session_id_string, "%d", session_id);
 
@@ -177,6 +178,31 @@ char* create_match_json_array(struct Match* match_list) {
     json_string = cJSON_Print(json_array);
 
     cJSON_Delete(json_array);
+
+    return json_string;
+}
+
+char* create_new_game_json_object(struct Match* match) {
+    char* json_string = NULL;
+
+    if(!match) {
+        perror("Match non valido (NULL)\n");
+        return json_string;
+    }
+
+    char* match_id_string = (char*)malloc(sizeof(char) * MATCH_ID_SIZE);
+    sprintf(match_id_string, "%d", match -> match_id);
+
+    cJSON* json_object = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(json_object, "match_id", match_id_string);
+    cJSON_AddStringToObject(json_object, "player_1", match -> player_1);
+
+    json_string = cJSON_Print(json_object);
+
+    // Pulizia oggetto JSON
+    cJSON_Delete(json_object);
+    free(match_id_string);
 
     return json_string;
 }

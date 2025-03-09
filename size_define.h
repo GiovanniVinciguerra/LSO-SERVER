@@ -7,6 +7,7 @@
 #define USERNAME_SIZE 16
 #define PASSWORD_SIZE 16
 #define SESSION_ID_SIZE 11 // Dimensione in caratteri di INT_MAX ottenuto dalla funzione rand
+#define MATCH_ID_SIZE 11 // Dimensione in caratteri di INT_MAX ottenuto dalla funzione rand
 #define BUFFER_MATCH_SIZE 34
 
 #endif

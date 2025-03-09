@@ -113,10 +113,26 @@ void handle_client(int client_fd) {
 
         char** auth = get_authority_credentials(body_pt);
         if(check_session_exist(auth[1], atoi(auth[0]))) {
-            // TODO Inizia partita
+            /* Controlla se esiste un match in attesa altrimenti lo crea (logica del server).
+               player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
+               player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
+            if(matches)
+                // Il client host della partita potrà sapere se c'è stata una modifica per il suo match in attesa.
+                matches -> player_2 = strdup(auth[1]);
+            else
+                matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
+
+            char* json_string = create_new_game_json_object(matches);
+            int json_string_len = strlen(json_string);
+
+            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response[0] = '\0';
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, json_string);
 
             printf("New-Game Response\n%s\n", response);
             write(client_fd, response, strlen(response));
+            free(json_string);
             free(response);
         } else {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
