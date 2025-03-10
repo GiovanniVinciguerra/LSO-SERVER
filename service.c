@@ -182,7 +182,7 @@ char* create_match_json_array(struct Match* match_list) {
     return json_string;
 }
 
-char* create_new_game_json_object(struct Match* match) {
+char* create_match_json_object(struct Match* match) {
     char* json_string = NULL;
 
     if(!match) {
@@ -197,6 +197,8 @@ char* create_new_game_json_object(struct Match* match) {
 
     cJSON_AddStringToObject(json_object, "match_id", match_id_string);
     cJSON_AddStringToObject(json_object, "player_1", match -> player_1);
+    cJSON_AddStringToObject(json_object, "player_2", match -> player_2);
+    cJSON_AddStringToObject(json_object, "status", &(match -> status));
 
     json_string = cJSON_Print(json_object);
 

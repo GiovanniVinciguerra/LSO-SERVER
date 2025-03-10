@@ -112,18 +112,27 @@ void handle_client(int client_fd) {
         }
 
         char** auth = get_authority_credentials(body_pt);
-        if(check_session_exist(auth[1], atoi(auth[0]))) {
-            /* Controlla se esiste un match in attesa e se è diverso dal giocatore che fa richiesta (gestione partite multiple)
+        int session_id = atoi(auth[0]);
+        if(check_session_exist(auth[1], session_id)) {
+            struct Match* tmp = matches;
+            /* Controlla se esiste un match in attesa (2) e se è diverso dal giocatore che fa richiesta (gestione partite multiple)
                altrimenti lo crea (logica del server).
                player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
                player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
-            if(matches && strcasecmp(matches -> player_1, auth[1]) != 0)
-                // Il client host della partita potrà sapere se c'è stata una modifica per il suo match in attesa.
-                matches -> player_2 = strdup(auth[1]);
-            else
+            while(tmp != NULL && strcmp(tmp -> player_1, auth[1]) == 0 && tmp -> status != '2')
+                tmp = tmp -> next;
+
+            if(tmp) {
+                // Il client host della partita potrà sapere se c'è stata una modifica per il suo match in attesa e eventualmente accettare la partita.
+                tmp -> player_2 = strdup(auth[1]);
+                tmp -> status = '3';
+            } else
                 matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
 
-            char* json_string = create_new_game_json_object(matches);
+            struct Session* session = find_session_by_id(sessions, session_id);
+            session -> match_play = tmp;
+
+            char* json_string = create_match_json_object(matches);
             int json_string_len = strlen(json_string);
 
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
