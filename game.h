@@ -16,3 +16,4 @@ struct Match* find_match_by_id(struct Match* match_list, int match_id);
 struct Match* free_match_node(struct Match* match_list, int match_id);
 void free_match_list(struct Match* match_list);
 int match_list_len(struct Match* match_list);
+void print_match_list(struct Match* match_list);

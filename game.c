@@ -145,3 +145,10 @@ int match_list_len(struct Match* match_list) {
 
     return count;
 }
+
+void print_match_list(struct Match* match_list) {
+    while(match_list) {
+        printf("%d -> [%s, %s, %c, %c]\n", match_list -> match_id, match_list -> player_1, match_list -> player_2 ? match_list -> player_2 : "NULL", match_list -> status, match_list -> result);
+        match_list = match_list -> next;
+    }
+}

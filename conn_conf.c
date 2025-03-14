@@ -115,15 +115,17 @@ void handle_client(int client_fd) {
         int session_id = atoi(auth[0]);
         if(check_session_exist(auth[1], session_id)) {
             struct Match* tmp = matches;
-            /* Controlla se esiste un match in attesa (2) e se è diverso dal giocatore che fa richiesta (gestione partite multiple)
-               altrimenti lo crea (logica del server).
+
+            /* Controlla se esiste un match in attesa (2) e se i player sono diversi dal giocatore che fa richiesta
+               (gestione partite multiple) altrimenti lo crea (logica del server).
                player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
                player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
-            while(tmp != NULL && strcmp(tmp -> player_1, auth[1]) == 0 && tmp -> status != '2')
+
+            while(tmp != NULL && (strcmp(tmp -> player_1, auth[1]) == 0 || tmp -> status != '2'))
                 tmp = tmp -> next;
 
             if(tmp) {
-                // Il client host della partita potrà sapere se c'è stata una modifica per il suo match in attesa e eventualmente accettare la partita.
+                // Il player_1 potrà sapere se c'è stata una modifica per il suo match in attesa e eventualmente accettare la partita.
                 tmp -> player_2 = strdup(auth[1]);
                 tmp -> status = '3';
             } else
@@ -132,7 +134,11 @@ void handle_client(int client_fd) {
             struct Session* session = find_session_by_id(sessions, session_id);
             session -> match_play = tmp;
 
-            char* json_string = create_match_json_object(matches);
+            char* json_string = NULL;
+            if(tmp)
+                json_string = create_match_json_object(tmp);
+            else
+                json_string = create_match_json_object(matches);
             int json_string_len = strlen(json_string);
 
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
