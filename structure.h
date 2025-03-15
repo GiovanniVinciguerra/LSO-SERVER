@@ -24,6 +24,7 @@ struct Match {
     char* player_2; // Username dello sfidato
     char  status; // (0 | 1 | 2 | 3) 0 -> terminata | 1 -> in corso | 2 -> in attesa | 3 -> validazione
     char result; // (0 | 1 | 2) 0 -> Parità | 1 -> Vince player_1 | 2 -> Vince player_2
+    char step; // Rappresenta l'ultima mossa effettuata
     struct Match* next;
     struct Match* prev;
 };

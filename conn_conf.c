@@ -188,6 +188,41 @@ void handle_client(int client_fd) {
         free(auth[0]);
         free(auth[1]);
         free(auth);
+    } else if(strncmp(buffer, "POST /update", 10) == 0) {
+        char* body_pt = find_body(buffer);
+        char* response = NULL;
+        if(body_pt == NULL) {
+            perror("Body non trovato");
+            return;
+        }
+
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        if(check_session_exist(auth[1], session_id)) {
+            int match_id = get_match_id(body_pt);
+            struct Match* match = find_match_by_id(matches, match_id);
+
+            char* json_string = create_match_json_object(match);
+            int json_string_len = strlen(json_string);
+
+            // Costruisce la response con tutte le informazioni da mandare al client
+            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response[0] = '\0';
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, json_string);
+
+            printf("Update Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(response);
+        } else {
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            printf("Stat Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+        }
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
     } else if(strncmp(buffer, "POST /winner", 10) == 0) {
         char* body_pt = find_body(buffer);
         char* response = NULL;
@@ -223,7 +258,7 @@ void handle_client(int client_fd) {
         } else
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
 
-        printf("Stat Response\n%s\n", response);
+        printf("Winner Response\n%s\n", response);
         write(client_fd, response, strlen(response));
 
         free(auth[0]);

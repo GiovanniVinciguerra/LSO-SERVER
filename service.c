@@ -217,6 +217,8 @@ char* create_match_json_object(struct Match* match) {
     sprintf(match_id_string, "%d", match -> match_id);
     char* status_string = (char*)malloc(sizeof(char) * 2);
     sprintf(status_string, "%c", match -> status);
+    char* step_string = (char*)malloc(sizeof(char) * 2);
+    sprintf(step_string, "%c", match -> step);
 
     cJSON* json_object = cJSON_CreateObject();
 
@@ -224,6 +226,7 @@ char* create_match_json_object(struct Match* match) {
     cJSON_AddStringToObject(json_object, "player_1", match -> player_1);
     cJSON_AddStringToObject(json_object, "player_2", match -> player_2);
     cJSON_AddStringToObject(json_object, "status", status_string);
+    cJSON_AddStringToObject(json_object, "step", step_string);
 
     json_string = cJSON_Print(json_object);
 
