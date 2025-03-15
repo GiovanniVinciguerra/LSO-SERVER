@@ -83,7 +83,7 @@ void handle_client(int client_fd) {
         char* response = NULL;
         if(find_user != NULL) {
             // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
-            sessions = add_session(sessions, create_session_node(find_user -> username, NULL));
+            sessions = add_session(sessions, create_session_node(find_user -> username));
             // Allega i restanti dati dell'utente al response da mandare al client
             char* json_string = create_user_json_object(find_user, sessions -> session_id);
             int json_string_len = strlen(json_string);
@@ -120,7 +120,6 @@ void handle_client(int client_fd) {
                (gestione partite multiple) altrimenti lo crea (logica del server).
                player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
                player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
-
             while(tmp != NULL && (strcmp(tmp -> player_1, auth[1]) == 0 || tmp -> status != '2'))
                 tmp = tmp -> next;
 
@@ -130,9 +129,6 @@ void handle_client(int client_fd) {
                 tmp -> status = '3';
             } else
                 matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
-
-            struct Session* session = find_session_by_id(sessions, session_id);
-            session -> match_play = tmp;
 
             char* json_string = NULL;
             if(tmp)
@@ -188,6 +184,47 @@ void handle_client(int client_fd) {
             printf("Stat Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
+    } else if(strncmp(buffer, "POST /winner", 10) == 0) {
+        char* body_pt = find_body(buffer);
+        char* response = NULL;
+        if(body_pt == NULL) {
+            perror("Body non trovato");
+            return;
+        }
+
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        if(check_session_exist(auth[1], session_id)) {
+            int match_id = get_match_id(body_pt);
+            struct Match* match = find_match_by_id(matches, match_id);
+
+            // Imposta lo status su terminata (0)
+            match -> status = '0';
+
+            // Imposta il vincitore
+            if(strcmp(match -> player_1, auth[1]) == 0)
+                match -> result = '1';
+            else
+                match -> result = '2';
+
+            // Salva la partita
+            save_game(match);
+
+            // Elimina la partita dalla lista di matches
+            matches = free_match_node(matches, match);
+            print_match_list(matches);
+
+            // Costruisce la response
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita salvata correttamente";
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+
+        printf("Stat Response\n%s\n", response);
+        write(client_fd, response, strlen(response));
 
         free(auth[0]);
         free(auth[1]);

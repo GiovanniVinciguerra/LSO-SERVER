@@ -3,7 +3,7 @@
 struct Session* sessions = NULL;
 
 // Tutti metodi per la creazione e gestione di liste
-struct Session* create_session_node(char* username, struct Match* match_play) {
+struct Session* create_session_node(char* username) {
     struct Session* new_session = (struct Session*)malloc(sizeof(struct Session));
     if (!new_session) {
         perror("Impossibile allocare memoria per un nuova sessione\n");
@@ -24,7 +24,6 @@ struct Session* create_session_node(char* username, struct Match* match_play) {
         return NULL;
     }
 
-    new_session -> match_play = match_play;
     new_session -> next = NULL;
     new_session -> prev = NULL;
 

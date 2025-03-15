@@ -6,7 +6,8 @@ char** get_authority_credentials(char* buffer_pt) {
     info[1] = (char*)malloc(sizeof(char) * USERNAME_SIZE);
     int copy_check = 0, byte_copy = 0, choice = 0;
 
-    while(*buffer_pt != '}') {
+    // Termina anche se all'interno del body ci sono più di 2 campi. In particolare session_id e username saranno sempre i primi 2 campi.
+    while(*buffer_pt != '}' && choice != 2) {
         if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
             copy_check = 1;
             buffer_pt+=2;
@@ -131,6 +132,28 @@ struct User* get_user(char* buffer_pt) {
 
     free(temp_buff);
     return new_user;
+}
+
+int get_match_id(char* buffer_pt) {
+    char* match_id_string = (char*)malloc(sizeof(char) * MATCH_ID_SIZE);
+    int check = 0, index = 0;
+
+    while(*buffer_pt != '}') {
+        if(*buffer_pt == '"')
+            check++;
+        else if(check == 11) {
+            match_id_string[index] = *buffer_pt;
+            index++;
+        }
+
+        buffer_pt++;
+    }
+
+    match_id_string[index] = '\0';
+    int match_id = atoi(match_id_string);
+    free(match_id_string);
+
+    return match_id;
 }
 
 char* create_user_json_object(struct User* user, int session_id) {

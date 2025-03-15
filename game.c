@@ -105,19 +105,17 @@ struct Match* find_match_by_id(struct Match* match_list, int match_id) {
     return find;
 }
 
-struct Match* free_match_node(struct Match* match_list, int match_id) {
-    struct Match* find_delete = find_match_by_id(match_list, match_id);
-
-    if(find_delete) {
-        if(find_delete -> prev)
-            find_delete -> prev -> next = find_delete -> next;
+struct Match* free_match_node(struct Match* match_list, struct Match* match) {
+    if(match) {
+        if(match -> prev)
+            match -> prev -> next = match -> next;
         else
-            match_list = find_delete -> next;
-        if(find_delete -> next)
-            find_delete -> next -> prev = find_delete -> prev;
-        free(find_delete -> player_1);
-        free(find_delete -> player_2);
-        free(find_delete);
+            match_list = match -> next;
+        if(match -> next)
+            match -> next -> prev = match -> prev;
+        free(match -> player_1);
+        free(match -> player_2);
+        free(match);
     }
 
     return match_list;
