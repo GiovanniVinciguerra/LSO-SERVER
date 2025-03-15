@@ -49,14 +49,14 @@ void handle_client(int client_fd) {
     buffer[bytes_read] = '\0';
     printf("Richiesta ricevuta:\n%s\n", buffer);
 
+    char* body_pt = find_body(buffer);
+    if(body_pt == NULL) {
+        perror("Body non trovato");
+        return;
+    }
+
     // Gestione delle varie richieste
     if (strncmp(buffer, "POST /signin", 12) == 0) {
-        char* body_pt = find_body(buffer);
-        if(body_pt == NULL) {
-            perror("Body non trovato");
-            return;
-        }
-
         struct User* new_user = get_user(body_pt);
         int save_check = save(new_user);
         // Risposta al client usando save_check
@@ -72,13 +72,6 @@ void handle_client(int client_fd) {
         write(client_fd, response, strlen(response));
         free_user_node(new_user);
     } else if (strncmp(buffer, "POST /login", 10) == 0) {
-        char* body_pt = find_body(buffer);
-
-        if(body_pt == NULL) {
-            perror("Body non trovato");
-            return;
-        }
-
         struct User* find_user = check_user_exist(body_pt);
         char* response = NULL;
         if(find_user != NULL) {
@@ -104,15 +97,9 @@ void handle_client(int client_fd) {
 
         free_user_node(find_user);
     } else if(strncmp(buffer, "POST /new-game", 14) == 0){
-        char* body_pt = find_body(buffer);
-        char* response = NULL;
-        if(body_pt == NULL) {
-            perror("Body non trovato");
-            return;
-        }
-
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
+        char* response = NULL;
         if(check_session_exist(auth[1], session_id)) {
             struct Match* tmp = matches;
 
@@ -156,14 +143,8 @@ void handle_client(int client_fd) {
         free(auth[1]);
         free(auth);
     } else if(strncmp(buffer, "POST /stat", 10) == 0) {
-        char* body_pt = find_body(buffer);
-        char* response = NULL;
-        if(body_pt == NULL) {
-            perror("Body non trovato");
-            return;
-        }
-
         char** auth = get_authority_credentials(body_pt);
+        char* response = NULL;
         if(check_session_exist(auth[1], atoi(auth[0]))) {
             struct Match* match_list = get_matches_by_username(auth[1]);
             char* json_string = create_match_json_array(match_list);
@@ -188,16 +169,31 @@ void handle_client(int client_fd) {
         free(auth[0]);
         free(auth[1]);
         free(auth);
-    } else if(strncmp(buffer, "POST /update", 10) == 0) {
-        char* body_pt = find_body(buffer);
-        char* response = NULL;
-        if(body_pt == NULL) {
-            perror("Body non trovato");
-            return;
-        }
-
+    } else if(strncmp(buffer, "POST /step", 10) == 0) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            int match_id = get_match_id(body_pt);
+            struct Match* match = find_match_by_id(matches, match_id);
+            match -> step = get_step(body_pt);
+
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nMossa memorizzata correttamente";
+        } else {
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+        }
+
+        printf("Step Response\n%s\n", response);
+        write(client_fd, response, strlen(response));
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
+    }
+    else if(strncmp(buffer, "POST /update", 10) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
         if(check_session_exist(auth[1], session_id)) {
             int match_id = get_match_id(body_pt);
             struct Match* match = find_match_by_id(matches, match_id);
@@ -224,15 +220,9 @@ void handle_client(int client_fd) {
         free(auth[1]);
         free(auth);
     } else if(strncmp(buffer, "POST /winner", 10) == 0) {
-        char* body_pt = find_body(buffer);
-        char* response = NULL;
-        if(body_pt == NULL) {
-            perror("Body non trovato");
-            return;
-        }
-
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
+        char* response = NULL;
         if(check_session_exist(auth[1], session_id)) {
             int match_id = get_match_id(body_pt);
             struct Match* match = find_match_by_id(matches, match_id);

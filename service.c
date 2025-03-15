@@ -151,9 +151,31 @@ int get_match_id(char* buffer_pt) {
 
     match_id_string[index] = '\0';
     int match_id = atoi(match_id_string);
+
     free(match_id_string);
 
     return match_id;
+}
+
+char get_step(char* buffer_pt) {
+    char* step_string = (char*)malloc(sizeof(char) * 2);
+    int check = 0;
+
+    while(*buffer_pt != '}') {
+        if(*buffer_pt == '"')
+            check++;
+        else if(check == 15)
+            step_string[0] = *buffer_pt;
+
+        buffer_pt++;
+    }
+
+    step_string[1] = '\0';
+    char step = step_string[0];
+
+    free(step_string);
+
+    return step;
 }
 
 char* create_user_json_object(struct User* user, int session_id) {
