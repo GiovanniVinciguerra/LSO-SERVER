@@ -13,7 +13,7 @@ int init_tcp_server(int port) {
     // Impostazione dell'indirizzo e della porta
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY; // Accetta connessioni su tutte le interfacce
-    address.sin_port = htons(port); // Convertire la porta in formato di rete
+    address.sin_port = htons(port); // Converte la porta in formato di rete
 
     // Binding della socket
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
@@ -38,14 +38,13 @@ void handle_client(int client_fd) {
     char buffer[BUFFER_SIZE];
     int bytes_read;
 
-    // Leggi la richiesta dal client
+    // Legge la richiesta dal client
     bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
     if (bytes_read < 0) {
         perror("Read failed");
         return;
     }
 
-    // Null-terminare la stringa per la stampa
     buffer[bytes_read] = '\0';
     printf("Richiesta ricevuta:\n%s\n", buffer);
 
@@ -71,7 +70,7 @@ void handle_client(int client_fd) {
         printf("Signin Response\n%s\n", response);
         write(client_fd, response, strlen(response));
         free_user_node(new_user);
-    } else if (strncmp(buffer, "POST /login", 10) == 0) {
+    } else if (strncmp(buffer, "POST /login", 11) == 0) {
         struct User* find_user = check_user_exist(body_pt);
         char* response = NULL;
         if(find_user != NULL) {
@@ -96,7 +95,7 @@ void handle_client(int client_fd) {
         }
 
         free_user_node(find_user);
-    } else if(strncmp(buffer, "POST /new-game", 14) == 0){
+    } else if(strncmp(buffer, "POST /new-game", 14) == 0) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
@@ -114,8 +113,16 @@ void handle_client(int client_fd) {
                 // Il player_1 potrà sapere se c'è stata una modifica per il suo match in attesa e eventualmente accettare la partita.
                 tmp -> player_2 = strdup(auth[1]);
                 tmp -> status = '3';
-            } else
+            } else {
                 matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
+                // Aggiunta messaggio di nuova partita creata alla coda dei messaggi
+                char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
+                message_string[0] = '\0';
+                strcat(message_string, matches -> player_1);
+                strcat(message_string, " ha creato una nuova partita 👾.");
+                enqueue(matches -> status, message_string);
+                free(message_string);
+            }
 
             char* json_string = NULL;
             if(tmp)
@@ -189,8 +196,7 @@ void handle_client(int client_fd) {
         free(auth[0]);
         free(auth[1]);
         free(auth);
-    }
-    else if(strncmp(buffer, "POST /update", 10) == 0) {
+    } else if(strncmp(buffer, "POST /update", 12) == 0) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
@@ -212,7 +218,7 @@ void handle_client(int client_fd) {
             free(response);
         } else {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
-            printf("Stat Response\n%s\n", response);
+            printf("Update Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
 
@@ -230,11 +236,28 @@ void handle_client(int client_fd) {
             // Imposta lo status su terminata (0)
             match -> status = '0';
 
+            // Aggiunta messaggio di partita terminata alla coda dei messaggi
+            char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
+            message_string[0] = '\0';
+            strcat(message_string, "Si è appena conclusa la partita tra ");
+            strcat(message_string, match -> player_1);
+            strcat(message_string, " e ");
+            strcat(message_string, match -> player_2);
+            strcat(message_string, ". Con la vittoria di ");
+
             // Imposta il vincitore
-            if(strcmp(match -> player_1, auth[1]) == 0)
+            if(strcmp(match -> player_1, auth[1]) == 0) {
                 match -> result = '1';
-            else
+                strcat(message_string, match -> player_1);
+            }
+            else {
                 match -> result = '2';
+                strcat(message_string, match -> player_2);
+            }
+
+            strcat(message_string, ". Che scontro incredibile 😮");
+            enqueue(match -> status, message_string);
+            free(message_string);
 
             // Salva la partita
             save_game(match);
@@ -249,6 +272,66 @@ void handle_client(int client_fd) {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
 
         printf("Winner Response\n%s\n", response);
+        write(client_fd, response, strlen(response));
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
+    } else if(strncmp(buffer, "POST /waiting", 13) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            int match_id = get_match_id(body_pt);
+            struct Match* match = find_match_by_id(matches, match_id);
+
+            match -> status = '2';
+
+            // Aggiunta messaggio di partita in attesa alla coda dei messaggi
+            char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
+            message_string[0] = '\0';
+            strcat(message_string, "La partita di ");
+            strcat(message_string, match -> player_1);
+            strcat(message_string, " è ora in attesa. Partecipate in tanti 😄");
+            enqueue(match -> status, message_string);
+            free(message_string);
+
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita messa in attesa";
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+
+        printf("Waiting Response\n%s\n", response);
+        write(client_fd, response, strlen(response));
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
+    } else if(strncmp(buffer, "POST /progress", 14) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            int match_id = get_match_id(body_pt);
+            struct Match* match = find_match_by_id(matches, match_id);
+
+            match -> status = '1';
+
+            // Aggiunta messaggio di partita tornata in attesa alla coda dei messaggi
+            char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
+            message_string[0] = '\0';
+            strcat(message_string, "La partita tra ");
+            strcat(message_string, match -> player_1);
+            strcat(message_string, " e ");
+            strcat(message_string, match -> player_2);
+            strcat(message_string, " è ora in corso. Che tensione 😱");
+            enqueue(match -> status, message_string);
+            free(message_string);
+
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita messa in corso";
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+
+        printf("Progress Response\n%s\n", response);
         write(client_fd, response, strlen(response));
 
         free(auth[0]);

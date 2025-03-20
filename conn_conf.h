@@ -16,6 +16,7 @@
 #include "session.h"
 #include "game.h"
 #include "service.h"
+#include "message.h"
 
 int init_tcp_server();
 void handle_client(int client_fd);

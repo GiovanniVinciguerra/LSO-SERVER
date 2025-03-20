@@ -57,7 +57,7 @@ struct Match* create_match_node(char* player_1, char result) {
     }
 
     new_match -> result = result;
-    new_match -> status = '2';
+    new_match -> status = '4';
     new_match -> step = '\0';
     if(player_1)
         new_match -> player_1 = strdup(player_1);
