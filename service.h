@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cJSON.h>
+#include "message.h"
 #include "structure.h"
 #include "size_define.h"
 
@@ -16,5 +17,6 @@ char get_step(char* buffer_pt);
 char* create_user_json_object(struct User* user, int session_id);
 char* create_match_json_array(struct Match* match_list);
 char* create_match_json_object(struct Match* match);
+char* create_message_json_array();
 
 #endif

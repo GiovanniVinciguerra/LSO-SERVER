@@ -337,6 +337,32 @@ void handle_client(int client_fd) {
         free(auth[0]);
         free(auth[1]);
         free(auth);
+    } else if(strncmp(buffer, "POST /messages", 14) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            char* json_string = create_message_json_array();
+            int json_string_len = strlen(json_string);
+
+            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response[0] = '\0';
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, json_string);
+
+            printf("Messages Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(json_string);
+            free(response);
+        } else {
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            printf("Messages Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+        }
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
     } else {
         // Risposta per richieste non riconosciute
         char* response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";

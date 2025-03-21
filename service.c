@@ -209,12 +209,14 @@ char* create_match_json_array(struct Match* match_list) {
 
     cJSON* json_array = cJSON_CreateArray();
 
+    char* result_string = (char*)malloc(sizeof(char) * 2);
     while(match_list != NULL) {
         cJSON* json_object = cJSON_CreateObject();
 
         cJSON_AddStringToObject(json_object, "player_1", match_list -> player_1);
         cJSON_AddStringToObject(json_object, "player_2", match_list -> player_2);
-        cJSON_AddStringToObject(json_object, "result", &(match_list -> result));
+        sprintf(result_string, "%c", match_list -> result);
+        cJSON_AddStringToObject(json_object, "result", result_string);
 
         cJSON_AddItemToArray(json_array, json_object);
         match_list = match_list -> next;
@@ -223,6 +225,7 @@ char* create_match_json_array(struct Match* match_list) {
     json_string = cJSON_Print(json_array);
 
     cJSON_Delete(json_array);
+    free(result_string);
 
     return json_string;
 }
@@ -255,6 +258,39 @@ char* create_match_json_object(struct Match* match) {
     // Pulizia oggetto JSON
     cJSON_Delete(json_object);
     free(match_id_string);
+    free(status_string);
+    free(step_string);
+
+    return json_string;
+}
+
+char* create_message_json_array() {
+    char* json_string = NULL;
+
+    cJSON* json_array = cJSON_CreateArray();
+
+    int top = crl_q.top;
+    char* label_string = (char*)malloc(sizeof(char) * 2);
+    char* timestamp_string = (char*)malloc(sizeof(char) * 21); // Rappresentazione a 64 bit della data
+    while(top != crl_q.bottom) { // Scorre la coda circolare dal top al bottom
+        cJSON* json_object = cJSON_CreateObject();
+
+        sprintf(label_string, "%c", crl_q.msgs[top].label);
+        cJSON_AddStringToObject(json_object, "label", label_string);
+        cJSON_AddStringToObject(json_object, "body", crl_q.msgs[top].body);
+        sprintf(timestamp_string, "%ld", crl_q.msgs[top].timestamp);
+        cJSON_AddStringToObject(json_object, "timestamp", timestamp_string);
+
+
+        cJSON_AddItemToArray(json_array, json_object);
+        top = (top + 1) % MESSAGE_QUEUE_SIZE; // Aggiorna l'indice al successivo elemento
+    }
+
+    json_string = cJSON_Print(json_array);
+
+    cJSON_Delete(json_array);
+    free(label_string);
+    free(timestamp_string);
 
     return json_string;
 }
