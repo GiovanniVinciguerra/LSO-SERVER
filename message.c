@@ -20,6 +20,9 @@ void enqueue(char label, char* body) {
     if(!body) // Non aggiunge se il messaggio è vuoto
         return;
 
+    if(!crl_q.msgs)
+        init();
+
     if(isFull())
         dequeue();
 

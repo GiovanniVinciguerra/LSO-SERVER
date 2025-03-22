@@ -272,7 +272,7 @@ char* create_message_json_array() {
     int top = crl_q.top;
     char* label_string = (char*)malloc(sizeof(char) * 2);
     char* timestamp_string = (char*)malloc(sizeof(char) * 21); // Rappresentazione a 64 bit della data
-    while(top != crl_q.bottom) { // Scorre la coda circolare dal top al bottom
+    while(top != (crl_q.bottom + 1)) { // Scorre la coda circolare dal top al bottom
         cJSON* json_object = cJSON_CreateObject();
 
         sprintf(label_string, "%c", crl_q.msgs[top].label);

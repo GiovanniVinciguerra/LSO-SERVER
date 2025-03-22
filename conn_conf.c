@@ -264,7 +264,6 @@ void handle_client(int client_fd) {
 
             // Elimina la partita dalla lista di matches
             matches = free_match_node(matches, match);
-            print_match_list(matches);
 
             // Costruisce la response
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita salvata correttamente";
