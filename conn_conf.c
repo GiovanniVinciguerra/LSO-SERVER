@@ -55,7 +55,7 @@ void handle_client(int client_fd) {
     }
 
     // Gestione delle varie richieste
-    if (strncmp(buffer, "OPTIONS /", 9) == 0) {
+    if (strncmp(buffer, "OPTIONS", 7) == 0) {
         // CORS Preflight
         const char* response = "HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods:POST, GET, OPTIONS\r\nAccess-Controll-Allow-Headers: Content-Type, Authorization\r\nContent-Length: 0\r\n\r\n";
         write(client_fd, response, strlen(response));
