@@ -88,7 +88,7 @@ void handle_client(int client_fd) {
             int json_string_len = strlen(json_string);
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
             strcat(response, json_string);
 
             printf("Login Response\n%s\n", response);
@@ -140,7 +140,7 @@ void handle_client(int client_fd) {
 
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
             strcat(response, json_string);
 
             printf("New-Game Response\n%s\n", response);
@@ -166,7 +166,7 @@ void handle_client(int client_fd) {
 
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
             strcat(response, json_string);
 
             printf("Stat Response\n%s\n", response);
@@ -217,7 +217,7 @@ void handle_client(int client_fd) {
             // Costruisce la response con tutte le informazioni da mandare al client
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
             strcat(response, json_string);
 
             printf("Update Response\n%s\n", response);
@@ -353,7 +353,7 @@ void handle_client(int client_fd) {
 
             response = (char*)malloc(sizeof(char) * (json_string_len + 46));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
             strcat(response, json_string);
 
             printf("Messages Response\n%s\n", response);
