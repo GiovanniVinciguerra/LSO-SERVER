@@ -52,6 +52,7 @@ void handle_client(int client_fd) {
     if (strncmp(buffer, "OPTIONS /", 9) == 0) {
         const char* response = "HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods:POST, GET, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type, Authorization\r\nContent-Length: 0\r\n\r\n";
         write(client_fd, response, strlen(response));
+        return;
     }
 
     char* body_pt = find_body(buffer);
