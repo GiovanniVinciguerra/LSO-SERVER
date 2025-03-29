@@ -68,11 +68,11 @@ void handle_client(int client_fd) {
         // Risposta al client usando save_check
         char* response = NULL;
         if(save_check == 0)
-            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nUtente registrato";
+            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente registrato";
         else if(save_check == 1)
-            response = "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\n\r\nUtente già registrato";
+            response = "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente già registrato";
         else
-            response = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nUtente non registrato";
+            response = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non registrato";
 
         printf("Signin Response\n%s\n", response);
         write(client_fd, response, strlen(response));
@@ -86,7 +86,7 @@ void handle_client(int client_fd) {
             // Allega i restanti dati dell'utente al response da mandare al client
             char* json_string = create_user_json_object(find_user, sessions -> session_id);
             int json_string_len = strlen(json_string);
-            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
             response[0] = '\0';
             strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
             strcat(response, json_string);
@@ -96,7 +96,7 @@ void handle_client(int client_fd) {
             free(json_string);
             free(response);
         } else {
-            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nUtente non trovato";
+            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non trovato";
             write(client_fd, response, strlen(response));
             printf("Login Response\n%s\n", response);
         }
@@ -138,9 +138,9 @@ void handle_client(int client_fd) {
                 json_string = create_match_json_object(matches);
             int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
             strcat(response, json_string);
 
             printf("New-Game Response\n%s\n", response);
@@ -148,7 +148,7 @@ void handle_client(int client_fd) {
             free(json_string);
             free(response);
         } else {
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
             printf("New-Game Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
@@ -164,9 +164,9 @@ void handle_client(int client_fd) {
             char* json_string = create_match_json_array(match_list);
             int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
             strcat(response, json_string);
 
             printf("Stat Response\n%s\n", response);
@@ -175,7 +175,7 @@ void handle_client(int client_fd) {
             free(response);
             free_match_list(match_list);
         } else {
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
             printf("Stat Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
@@ -192,9 +192,9 @@ void handle_client(int client_fd) {
             struct Match* match = find_match_by_id(matches, match_id);
             match -> step = get_step(body_pt);
 
-            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nMossa memorizzata correttamente";
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nMossa memorizzata correttamente";
         } else {
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
         }
 
         printf("Step Response\n%s\n", response);
@@ -215,16 +215,16 @@ void handle_client(int client_fd) {
             int json_string_len = strlen(json_string);
 
             // Costruisce la response con tutte le informazioni da mandare al client
-            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\rAccess-Control-Allow-Origin: *\r\n\r\n");
             strcat(response, json_string);
 
             printf("Update Response\n%s\n", response);
             write(client_fd, response, strlen(response));
             free(response);
         } else {
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
             printf("Update Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
@@ -273,9 +273,9 @@ void handle_client(int client_fd) {
             matches = free_match_node(matches, match);
 
             // Costruisce la response
-            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita salvata correttamente";
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita salvata correttamente";
         } else
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
 
         printf("Winner Response\n%s\n", response);
         write(client_fd, response, strlen(response));
@@ -302,9 +302,9 @@ void handle_client(int client_fd) {
             enqueue(match -> status, message_string);
             free(message_string);
 
-            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita messa in attesa";
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita messa in attesa";
         } else
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
 
         printf("Waiting Response\n%s\n", response);
         write(client_fd, response, strlen(response));
@@ -333,9 +333,9 @@ void handle_client(int client_fd) {
             enqueue(match -> status, message_string);
             free(message_string);
 
-            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\nPartita messa in corso";
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita messa in corso";
         } else
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
 
         printf("Progress Response\n%s\n", response);
         write(client_fd, response, strlen(response));
@@ -351,9 +351,9 @@ void handle_client(int client_fd) {
             char* json_string = create_message_json_array();
             int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 46));
+            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
             strcat(response, json_string);
 
             printf("Messages Response\n%s\n", response);
@@ -361,7 +361,7 @@ void handle_client(int client_fd) {
             free(json_string);
             free(response);
         } else {
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nUtente non loggato correttamente";
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
             printf("Messages Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
@@ -371,7 +371,7 @@ void handle_client(int client_fd) {
         free(auth);
     } else {
         // Risposta per richieste non riconosciute
-        char* response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRisorsa non trovata";
+        char* response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nRisorsa non trovata";
         printf("Method Not Allowed\n%s\n", response);
         write(client_fd, response, strlen(response));
     }
