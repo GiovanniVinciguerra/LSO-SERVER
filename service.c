@@ -85,12 +85,8 @@ struct User* get_credentials(char* buffer_pt) {
     char* username = NULL;
     char* password = NULL;
 
-    if(json == NULL)
-        perror("Body non trovato\n");
-    else {
-        username = cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring;
-        password = cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring;
-    }
+    username = cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring;
+    password = cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring;
 
     user = (struct User*)malloc(sizeof(struct User));
     user -> username = strdup(username);

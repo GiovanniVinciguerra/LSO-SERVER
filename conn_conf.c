@@ -79,11 +79,17 @@ void handle_client(int client_fd) {
             sessions = add_session(sessions, create_session_node(find_user -> username));
             // Allega i restanti dati dell'utente al response da mandare al client
             char* json_string = create_user_json_object(find_user, sessions -> session_id);
-            int json_string_len = strlen(json_string);
-            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
+            response = (char*)malloc(sizeof(char) * 5000);
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
+            /*int json_string_len = strlen(json_string);
+            response = (char*)malloc(sizeof(char) * (json_string_len + 1024));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
-            strcat(response, json_string);
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ");
+            char* json_len = (char*)malloc(sizeof(char) * 11);
+            sprintf(json_len, "%d", json_string_len);
+            strcat(response, json_len);
+            strcat(response, "\r\nConnection: close\r\n\r\n");
+            strcat(response, json_string);*/
 
             printf("Login Response\n%s\n", response);
             write(client_fd, response, strlen(response));
