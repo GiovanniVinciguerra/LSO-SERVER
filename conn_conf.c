@@ -81,7 +81,7 @@ void handle_client(int client_fd) {
             int json_string_len = strlen(json_string);
             response = (char*)malloc(sizeof(char) * (json_string_len + 84));
             response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
+            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
             strcat(response, json_string);
 
             printf("Login Response\n%s\n", response);
