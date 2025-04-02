@@ -36,7 +36,7 @@ char** get_authority_credentials(char* buffer_pt) {
     return info;
 }
 
-struct User* get_credentials(char* buffer_pt) {
+/*struct User* get_credentials(char* buffer_pt) {
     struct User* user_check = (struct User*)malloc(sizeof(struct User));
     char* temp_buff = (char*)malloc(sizeof(char) * USERNAME_SIZE);
     int copy_check = 0, byte_copy = 0, choice = 0;
@@ -77,6 +77,28 @@ struct User* get_credentials(char* buffer_pt) {
 
     free(temp_buff);
     return user_check;
+}*/
+
+struct User* get_credentials(char* buffer_pt) {
+    cJSON *json = cJSON_Parse(buffer_pt);
+    struct User* user = NULL;
+    char* username = NULL;
+    char* password = NULL;
+
+    if(json == NULL)
+        perror("Body non trovato\n");
+    else {
+        username = cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring;
+        password = cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring;
+    }
+
+    user = (struct User*)malloc(sizeof(struct User));
+    user -> username = strdup(username);
+    user -> password = strdup(password);
+
+    cJSON_free(json);
+
+    return user;
 }
 
 struct User* get_user(char* buffer_pt) {

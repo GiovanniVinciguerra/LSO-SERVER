@@ -71,6 +71,7 @@ void handle_client(int client_fd) {
         write(client_fd, response, strlen(response));
         free_user_node(new_user);
     } else if (strncmp(buffer, "POST /login", 11) == 0) {
+        //struct User* find_user = check_user_exist(body_pt);
         struct User* find_user = check_user_exist(body_pt);
         char* response = NULL;
         if(find_user != NULL) {
