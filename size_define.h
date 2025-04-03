@@ -8,6 +8,7 @@
 #define PASSWORD_SIZE 16
 #define SESSION_ID_SIZE 11 // Dimensione in caratteri di INT_MAX ottenuto dalla funzione rand
 #define MATCH_ID_SIZE 11 // Dimensione in caratteri di INT_MAX ottenuto dalla funzione rand
+#define RESPONSE_SIZE 132 // Dimensione header response
 #define BUFFER_MATCH_SIZE 34
 #define MESSAGE_QUEUE_SIZE 2048
 #define MESSAGE_BODY_SIZE 256

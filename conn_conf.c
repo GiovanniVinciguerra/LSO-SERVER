@@ -77,19 +77,11 @@ void handle_client(int client_fd) {
         if(find_user != NULL) {
             // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
             sessions = add_session(sessions, create_session_node(find_user -> username));
+
             // Allega i restanti dati dell'utente al response da mandare al client
             char* json_string = create_user_json_object(find_user, sessions -> session_id);
-            response = (char*)malloc(sizeof(char) * 5000);
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
-            /*int json_string_len = strlen(json_string);
-            response = (char*)malloc(sizeof(char) * (json_string_len + 1024));
-            response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ");
-            char* json_len = (char*)malloc(sizeof(char) * 11);
-            sprintf(json_len, "%d", json_string_len);
-            strcat(response, json_len);
-            strcat(response, "\r\nConnection: close\r\n\r\n");
-            strcat(response, json_string);*/
 
             printf("Login Response\n%s\n", response);
             write(client_fd, response, strlen(response));
@@ -124,9 +116,7 @@ void handle_client(int client_fd) {
                 matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
                 // Aggiunta messaggio di nuova partita creata alla coda dei messaggi
                 char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
-                message_string[0] = '\0';
-                strcat(message_string, matches -> player_1);
-                strcat(message_string, " ha creato una nuova partita 👾.");
+                sprintf(message_string, "%s ha creato una nuova partita 👾.", matches -> player_1);
                 enqueue(matches -> status, message_string);
                 free(message_string);
             }
@@ -136,12 +126,9 @@ void handle_client(int client_fd) {
                 json_string = create_match_json_object(tmp);
             else
                 json_string = create_match_json_object(matches);
-            int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
-            response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
-            strcat(response, json_string);
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
             printf("New-Game Response\n%s\n", response);
             write(client_fd, response, strlen(response));
@@ -162,12 +149,9 @@ void handle_client(int client_fd) {
         if(check_session_exist(auth[1], atoi(auth[0]))) {
             struct Match* match_list = get_matches_by_username(auth[1]);
             char* json_string = create_match_json_array(match_list);
-            int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
-            response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
-            strcat(response, json_string);
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
             printf("Stat Response\n%s\n", response);
             write(client_fd, response, strlen(response));
@@ -212,13 +196,10 @@ void handle_client(int client_fd) {
             struct Match* match = find_match_by_id(matches, match_id);
 
             char* json_string = create_match_json_object(match);
-            int json_string_len = strlen(json_string);
 
             // Costruisce la response con tutte le informazioni da mandare al client
-            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
-            response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\rAccess-Control-Allow-Origin: *\r\n\r\n");
-            strcat(response, json_string);
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
             printf("Update Response\n%s\n", response);
             write(client_fd, response, strlen(response));
@@ -245,12 +226,7 @@ void handle_client(int client_fd) {
 
             // Aggiunta messaggio di partita terminata alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
-            message_string[0] = '\0';
-            strcat(message_string, "Si è appena conclusa la partita tra ");
-            strcat(message_string, match -> player_1);
-            strcat(message_string, " e ");
-            strcat(message_string, match -> player_2);
-            strcat(message_string, ". Con la vittoria di ");
+            sprintf(message_string, "Si è appena conclusa la partita tra %s e %s. Con la vittoria di ", match -> player_1, match -> player_2);
 
             // Imposta il vincitore
             if(strcmp(match -> player_1, auth[1]) == 0) {
@@ -295,10 +271,7 @@ void handle_client(int client_fd) {
 
             // Aggiunta messaggio di partita in attesa alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
-            message_string[0] = '\0';
-            strcat(message_string, "La partita di ");
-            strcat(message_string, match -> player_1);
-            strcat(message_string, " è ora in attesa. Partecipate in tanti 😄");
+            sprintf(message_string, "La partita di %s è ora in attesa. Partecipate in tanti 😄", match -> player_1);
             enqueue(match -> status, message_string);
             free(message_string);
 
@@ -324,12 +297,7 @@ void handle_client(int client_fd) {
 
             // Aggiunta messaggio di partita tornata in attesa alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
-            message_string[0] = '\0';
-            strcat(message_string, "La partita tra ");
-            strcat(message_string, match -> player_1);
-            strcat(message_string, " e ");
-            strcat(message_string, match -> player_2);
-            strcat(message_string, " è ora in corso. Che tensione 😱");
+            sprintf(message_string, "La partita tra %s e %s è ora in corso. Che tensione 😱", match -> player_1, match -> player_2);
             enqueue(match -> status, message_string);
             free(message_string);
 
@@ -349,12 +317,9 @@ void handle_client(int client_fd) {
         char* response = NULL;
         if(check_session_exist(auth[1], session_id)) {
             char* json_string = create_message_json_array();
-            int json_string_len = strlen(json_string);
 
-            response = (char*)malloc(sizeof(char) * (json_string_len + 84));
-            response[0] = '\0';
-            strcat(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\n\r\n");
-            strcat(response, json_string);
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
             printf("Messages Response\n%s\n", response);
             write(client_fd, response, strlen(response));

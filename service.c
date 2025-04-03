@@ -1,196 +1,63 @@
 #include "service.h"
 
-char** get_authority_credentials(char* buffer_pt) {
-    char** info = (char**)malloc(sizeof(char*) * 2);
-    info[0] = (char*)malloc(sizeof(char) * SESSION_ID_SIZE);
-    info[1] = (char*)malloc(sizeof(char) * USERNAME_SIZE);
-    int copy_check = 0, byte_copy = 0, choice = 0;
+char** get_authority_credentials(char* body) {
+    cJSON* json = cJSON_Parse(body);
 
-    // Termina anche se all'interno del body ci sono più di 2 campi. In particolare session_id e username saranno sempre i primi 2 campi.
-    while(*buffer_pt != '}' && choice != 2) {
-        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
-            copy_check = 1;
-            buffer_pt+=2;
-        } else if(copy_check == 0) {
-            buffer_pt++;
-            continue;
-        }
+    char** info = (char**)malloc(sizeof(char*) * 2); // Contiene session_id e username estratti dal body della response
+    info[0] = strdup(cJSON_GetObjectItemCaseSensitive(json, "session_id") -> valuestring);
+    info[1] = strdup(cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring);
 
-        if(copy_check == 1) {
-            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 1)) {
-                copy_check = 0;
-                buffer_pt+=2;
-                info[1][byte_copy] = '\0';
-                if(choice == 0)
-                    strcpy(info[0], info[1]);
-                byte_copy = 0;
-                choice++;
-            } else {
-                info[1][byte_copy] = *buffer_pt;
-                buffer_pt++;
-                byte_copy++;
-            }
-        }
-    }
+    cJSON_free(json);
 
     return info;
 }
 
-/*struct User* get_credentials(char* buffer_pt) {
-    struct User* user_check = (struct User*)malloc(sizeof(struct User));
-    char* temp_buff = (char*)malloc(sizeof(char) * USERNAME_SIZE);
-    int copy_check = 0, byte_copy = 0, choice = 0;
+struct User* get_credentials(char* body) {
+    cJSON* json = cJSON_Parse(body);
 
-    while(*buffer_pt != '}') {
-        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
-            copy_check = 1;
-            buffer_pt+=2;
-        } else if(copy_check == 0) {
-            buffer_pt++;
-            continue;
-        }
-
-        if(copy_check == 1) {
-            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 1)) {
-                copy_check = 0;
-                buffer_pt+=2;
-                temp_buff[byte_copy] = '\0';
-                switch(choice) {
-                    case 0:
-                        user_check -> username = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(user_check -> username, temp_buff);
-                        break;
-                    case 1:
-                        user_check -> password = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(user_check -> password, temp_buff);
-                        break;
-                }
-                byte_copy = 0;
-                choice++;
-            } else {
-                temp_buff[byte_copy] = *buffer_pt;
-                buffer_pt++;
-                byte_copy++;
-            }
-        }
-    }
-
-    free(temp_buff);
-    return user_check;
-}*/
-
-struct User* get_credentials(char* buffer_pt) {
-    cJSON *json = cJSON_Parse(buffer_pt);
-    struct User* user = NULL;
-    char* username = NULL;
-    char* password = NULL;
-
-    username = cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring;
-    password = cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring;
-
-    user = (struct User*)malloc(sizeof(struct User));
-    user -> username = strdup(username);
-    user -> password = strdup(password);
+    struct User* user = (struct User*)malloc(sizeof(struct User));
+    user -> username = strdup(cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring);
+    user -> password = strdup(cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring);
 
     cJSON_free(json);
 
     return user;
 }
 
-struct User* get_user(char* buffer_pt) {
+struct User* get_user(char* body) {
+    cJSON* json = cJSON_Parse(body);
+
     struct User* new_user = (struct User*)malloc(sizeof(struct User));
-    char* temp_buff = (char*)malloc(sizeof(char) * TEMP_BUFFER_SIZE);
-    int copy_check = 0, byte_copy = 0, choice = 0;
+    new_user -> name = strdup(cJSON_GetObjectItemCaseSensitive(json, "name") -> valuestring);
+    new_user -> surname = strdup(cJSON_GetObjectItemCaseSensitive(json, "surname") -> valuestring);
+    new_user -> email = strdup(cJSON_GetObjectItemCaseSensitive(json, "mail") -> valuestring);
+    new_user -> username = strdup(cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring);
+    new_user -> password = strdup(cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring);
 
-    while(*buffer_pt != '}') {
-        if(*buffer_pt == ':' && *(buffer_pt + 1) == '"') {
-            copy_check = 1;
-            buffer_pt+=2;
-        } else if(copy_check == 0) {
-            buffer_pt++;
-            continue;
-        }
+    cJSON_free(json);
 
-        if(copy_check == 1) {
-            if(*buffer_pt == '"' && (*(buffer_pt + 1) == ',' || choice == 4)) {
-                copy_check = 0;
-                buffer_pt+=2;
-                temp_buff[byte_copy] = '\0';
-                switch(choice) {
-                    case 0:
-                        new_user -> name = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(new_user -> name, temp_buff);
-                        break;
-                    case 1:
-                        new_user -> surname = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(new_user -> surname, temp_buff);
-                        break;
-                    case 2:
-                        new_user -> username = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(new_user -> username, temp_buff);
-                        break;
-                    case 3:
-                        new_user -> email = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(new_user -> email, temp_buff);
-                        break;
-                    case 4:
-                        new_user -> password = (char*)malloc(sizeof(char) * byte_copy);
-                        strcpy(new_user -> password, temp_buff);
-                        break;
-                }
-                byte_copy = 0;
-                choice++;
-            } else {
-                temp_buff[byte_copy] = *buffer_pt;
-                buffer_pt++;
-                byte_copy++;
-            }
-        }
-    }
-
-    free(temp_buff);
     return new_user;
 }
 
-int get_match_id(char* buffer_pt) {
-    char* match_id_string = (char*)malloc(sizeof(char) * MATCH_ID_SIZE);
-    int check = 0, index = 0;
+int get_match_id(char* body) {
+    cJSON* json = cJSON_Parse(body);
 
-    while(*buffer_pt != '}') {
-        if(*buffer_pt == '"')
-            check++;
-        else if(check == 11) {
-            match_id_string[index] = *buffer_pt;
-            index++;
-        }
-
-        buffer_pt++;
-    }
-
-    match_id_string[index] = '\0';
+    char* match_id_string = strdup(cJSON_GetObjectItemCaseSensitive(json, "match_id") -> valuestring);
     int match_id = atoi(match_id_string);
 
+    cJSON_free(json);
     free(match_id_string);
 
     return match_id;
 }
 
-char get_step(char* buffer_pt) {
-    char* step_string = (char*)malloc(sizeof(char) * 2);
-    int check = 0;
+char get_step(char* body) {
+    cJSON* json = cJSON_Parse(body);
 
-    while(*buffer_pt != '}') {
-        if(*buffer_pt == '"')
-            check++;
-        else if(check == 15)
-            step_string[0] = *buffer_pt;
-
-        buffer_pt++;
-    }
-
-    step_string[1] = '\0';
+    char* step_string = strdup(cJSON_GetObjectItemCaseSensitive(json, "step") -> valuestring);
     char step = step_string[0];
 
+    cJSON_free(json);
     free(step_string);
 
     return step;
