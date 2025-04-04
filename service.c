@@ -157,18 +157,20 @@ char* create_message_json_array() {
     int top = crl_q.top;
     char* label_string = (char*)malloc(sizeof(char) * 2);
     char* timestamp_string = (char*)malloc(sizeof(char) * 21); // Rappresentazione a 64 bit della data
-    while(top != (crl_q.bottom + 1)) { // Scorre la coda circolare dal top al bottom
-        cJSON* json_object = cJSON_CreateObject();
+    if (crl_q.top != crl_q.bottom) { // Controlla che la coda non è vuota
+        while(top != (crl_q.bottom + 1)) { // Scorre la coda circolare dal top al bottom
+            cJSON* json_object = cJSON_CreateObject();
 
-        sprintf(label_string, "%c", crl_q.msgs[top].label);
-        cJSON_AddStringToObject(json_object, "label", label_string);
-        cJSON_AddStringToObject(json_object, "body", crl_q.msgs[top].body);
-        sprintf(timestamp_string, "%ld", crl_q.msgs[top].timestamp);
-        cJSON_AddStringToObject(json_object, "timestamp", timestamp_string);
+            sprintf(label_string, "%c", crl_q.msgs[top].label);
+            cJSON_AddStringToObject(json_object, "label", label_string);
+            cJSON_AddStringToObject(json_object, "body", crl_q.msgs[top].body);
+            sprintf(timestamp_string, "%ld", crl_q.msgs[top].timestamp);
+            cJSON_AddStringToObject(json_object, "timestamp", timestamp_string);
 
 
-        cJSON_AddItemToArray(json_array, json_object);
-        top = (top + 1) % MESSAGE_QUEUE_SIZE; // Aggiorna l'indice al successivo elemento
+            cJSON_AddItemToArray(json_array, json_object);
+            top = (top + 1) % MESSAGE_QUEUE_SIZE; // Aggiorna l'indice al successivo elemento
+        }
     }
 
     json_string = cJSON_Print(json_array);
