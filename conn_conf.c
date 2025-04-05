@@ -94,6 +94,22 @@ void handle_client(int client_fd) {
         }
 
         free_user_node(find_user);
+    } else if(strncmp(buffer, "POST /logout", 12) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            sessions = remove_session_node(sessions, session_id);
+            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente disconnesso correttamente";
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
+
+        printf("Logout Response\n%s\n", response);
+        write(client_fd, response, strlen(response));
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
     } else if(strncmp(buffer, "POST /new-game", 14) == 0) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
