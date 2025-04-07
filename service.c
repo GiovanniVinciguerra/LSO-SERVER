@@ -134,7 +134,10 @@ char* create_match_json_object(struct Match* match) {
 
     cJSON_AddStringToObject(json_object, "match_id", match_id_string);
     cJSON_AddStringToObject(json_object, "player_1", match -> player_1);
-    cJSON_AddStringToObject(json_object, "player_2", match -> player_2);
+    if(match -> player_2 == NULL)
+        cJSON_AddStringToObject(json_object, "player_2", "");
+    else
+        cJSON_AddStringToObject(json_object, "player_2", match -> player_2);
     cJSON_AddStringToObject(json_object, "status", status_string);
     cJSON_AddStringToObject(json_object, "step", step_string);
 
