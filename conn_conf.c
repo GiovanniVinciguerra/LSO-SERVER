@@ -186,16 +186,16 @@ void handle_client(int client_fd) {
         if(check_session_exist(auth[1], session_id)) {
             int match_id = get_match_id(body_pt);
             struct Match* match = find_match_by_id(matches, match_id);
+
             for(int i = 0; i < STEPS_SIZE; i++)
-                if(match -> steps[i] != NULL) {
+                if(match -> steps[i] == NULL) {
                     match -> steps[i] = get_step(body_pt);
                     break;
                 }
 
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nMossa memorizzata correttamente";
-        } else {
+        } else
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
-        }
 
         printf("Step Response\n%s\n", response);
         write(client_fd, response, strlen(response));
