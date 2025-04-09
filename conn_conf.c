@@ -241,6 +241,8 @@ void handle_client(int client_fd) {
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
+            free_match_list(user_matches);
+
             printf("Matches Response\n%s\n", response);
             write(client_fd, response, strlen(response));
             free(response);
