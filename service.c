@@ -7,7 +7,7 @@ char** get_authority_credentials(char* body) {
     info[0] = strdup(cJSON_GetObjectItemCaseSensitive(json, "session_id") -> valuestring);
     info[1] = strdup(cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring);
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     return info;
 }
@@ -19,7 +19,7 @@ struct User* get_credentials(char* body) {
     user -> username = strdup(cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring);
     user -> password = strdup(cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring);
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     return user;
 }
@@ -51,14 +51,10 @@ int get_match_id(char* body) {
     return match_id;
 }
 
-char get_step(char* body) {
+char* get_step(char* body) {
     cJSON* json = cJSON_Parse(body);
 
-    char* step_string = strdup(cJSON_GetObjectItemCaseSensitive(json, "step") -> valuestring);
-    char step = step_string[0];
-
-    cJSON_free(json);
-    free(step_string);
+    char* step = strdup(cJSON_GetObjectItemCaseSensitive(json, "step") -> valuestring);
 
     return step;
 }
@@ -89,7 +85,7 @@ char* create_user_json_object(struct User* user, int session_id) {
     return json_string;
 }
 
-char* create_match_json_array(struct Match* match_list) {
+char* create_save_match_json_array(struct Match* match_list) {
     char* json_string = NULL;
 
     cJSON* json_array = cJSON_CreateArray();
@@ -118,19 +114,19 @@ char* create_match_json_array(struct Match* match_list) {
 char* create_match_json_object(struct Match* match) {
     char* json_string = NULL;
 
-    if(!match) {
-        perror("Match non valido (NULL)\n");
-        return json_string;
-    }
-
     char* match_id_string = (char*)malloc(sizeof(char) * MATCH_ID_SIZE);
     sprintf(match_id_string, "%d", match -> match_id);
     char* status_string = (char*)malloc(sizeof(char) * 2);
     sprintf(status_string, "%c", match -> status);
-    char* step_string = (char*)malloc(sizeof(char) * 2);
-    sprintf(step_string, "%c", match -> step);
+    char* result_string = (char*)malloc(sizeof(char) * 2);
+    sprintf(result_string, "%c", match -> result);
+    char* seed_1_string = (char*)malloc(sizeof(char) * 2);
+    sprintf(seed_1_string, "%c", match -> seed_1);
+    char* seed_2_string = (char*)malloc(sizeof(char) * 2);
+    sprintf(seed_2_string, "%c", match -> seed_2);
 
     cJSON* json_object = cJSON_CreateObject();
+    cJSON* json_step_array = cJSON_CreateArray();
 
     cJSON_AddStringToObject(json_object, "match_id", match_id_string);
     cJSON_AddStringToObject(json_object, "player_1", match -> player_1);
@@ -139,7 +135,18 @@ char* create_match_json_object(struct Match* match) {
     else
         cJSON_AddStringToObject(json_object, "player_2", match -> player_2);
     cJSON_AddStringToObject(json_object, "status", status_string);
-    cJSON_AddStringToObject(json_object, "step", step_string);
+    cJSON_AddStringToObject(json_object, "result", result_string);
+    cJSON_AddStringToObject(json_object, "seed_1", seed_1_string);
+    cJSON_AddStringToObject(json_object, "seed_2", seed_2_string);
+    for(int i = 0; i < STEPS_SIZE; i++)
+        if(match -> steps[i]) {
+            cJSON* json_step_object = cJSON_CreateObject();
+
+            cJSON_AddStringToObject(json_step_object, "step", match -> steps[i]);
+
+            cJSON_AddItemToArray(json_step_array, json_step_object);
+        }
+    cJSON_AddItemToObject(json_object, "steps", json_step_array);
 
     json_string = cJSON_Print(json_object);
 
@@ -147,7 +154,66 @@ char* create_match_json_object(struct Match* match) {
     cJSON_Delete(json_object);
     free(match_id_string);
     free(status_string);
-    free(step_string);
+    free(result_string);
+    free(seed_1_string);
+    free(seed_2_string);
+
+    return json_string;
+}
+
+char* create_match_json_array(struct Match* match) {
+    char* json_string = NULL;
+
+    cJSON* json_array = cJSON_CreateArray();
+
+    char* match_id_string = (char*)malloc(sizeof(char) * MATCH_ID_SIZE);
+    char* status_string = (char*)malloc(sizeof(char) * 2);
+    char* result_string = (char*)malloc(sizeof(char) * 2);
+    char* seed_1_string = (char*)malloc(sizeof(char) * 2);
+    char* seed_2_string = (char*)malloc(sizeof(char) * 2);
+
+    while(match != NULL) {
+        sprintf(match_id_string, "%d", match -> match_id);
+        sprintf(status_string, "%c", match -> status);
+        sprintf(result_string, "%c", match -> result);
+        sprintf(seed_1_string, "%c", match -> seed_1);
+        sprintf(seed_2_string, "%c", match -> seed_2);
+
+        cJSON* json_object = cJSON_CreateObject();
+        cJSON* json_step_array = cJSON_CreateArray();
+
+        cJSON_AddStringToObject(json_object, "match_id", match_id_string);
+        cJSON_AddStringToObject(json_object, "player_1", match -> player_1);
+        if(match -> player_2 == NULL)
+            cJSON_AddStringToObject(json_object, "player_2", "");
+        else
+            cJSON_AddStringToObject(json_object, "player_2", match -> player_2);
+        cJSON_AddStringToObject(json_object, "status", status_string);
+        cJSON_AddStringToObject(json_object, "result", result_string);
+        cJSON_AddStringToObject(json_object, "seed_1", seed_1_string);
+        cJSON_AddStringToObject(json_object, "seed_2", seed_2_string);
+        for(int i = 0; i < STEPS_SIZE; i++)
+            if(match -> steps[i]) {
+                cJSON* json_step_object = cJSON_CreateObject();
+
+                cJSON_AddStringToObject(json_step_object, "step", match -> steps[i]);
+
+                cJSON_AddItemToArray(json_step_array, json_step_object);
+            }
+        cJSON_AddItemToObject(json_object, "steps", json_step_array);
+        cJSON_AddItemToArray(json_array, json_object);
+
+        match = match -> next;
+    }
+
+    json_string = cJSON_Print(json_array);
+
+    cJSON_Delete(json_array);
+    free(match_id_string);
+    free(status_string);
+    free(result_string);
+    free(seed_1_string);
+    free(seed_2_string);
 
     return json_string;
 }
@@ -158,13 +224,13 @@ char* create_message_json_array() {
     cJSON* json_array = cJSON_CreateArray();
 
     int top = crl_q.top;
-    char* label_string = (char*)malloc(sizeof(char) * 2);
     char* timestamp_string = (char*)malloc(sizeof(char) * 21); // Rappresentazione a 64 bit della data
     if (crl_q.top != crl_q.bottom) { // Controlla che la coda non è vuota
         while(top != (crl_q.bottom + 1)) { // Scorre la coda circolare dal top al bottom
             cJSON* json_object = cJSON_CreateObject();
-
+            char* label_string = (char*)malloc(sizeof(char) * 2);
             sprintf(label_string, "%c", crl_q.msgs[top].label);
+
             cJSON_AddStringToObject(json_object, "label", label_string);
             cJSON_AddStringToObject(json_object, "body", crl_q.msgs[top].body);
             sprintf(timestamp_string, "%ld", crl_q.msgs[top].timestamp);
@@ -173,14 +239,31 @@ char* create_message_json_array() {
 
             cJSON_AddItemToArray(json_array, json_object);
             top = (top + 1) % MESSAGE_QUEUE_SIZE; // Aggiorna l'indice al successivo elemento
+            free(label_string);
         }
     }
 
     json_string = cJSON_Print(json_array);
 
     cJSON_Delete(json_array);
-    free(label_string);
     free(timestamp_string);
+
+    return json_string;
+}
+
+char* create_seed_json_object(char seed) {
+    char* json_string = NULL;
+
+    cJSON* json_object = cJSON_CreateObject();
+    char* seed_string = (char*)malloc(sizeof(char) * 2);
+    sprintf(seed_string, "%c", seed);
+
+    cJSON_AddStringToObject(json_object, "seed", seed_string);
+
+    json_string = cJSON_Print(json_object);
+
+    cJSON_Delete(json_object);
+    free(seed_string);
 
     return json_string;
 }

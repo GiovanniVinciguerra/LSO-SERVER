@@ -24,12 +24,14 @@ struct Session {
 struct Match {
     int match_id; // L'ID del match (generato randomicamente)
     char* player_1; // Username dello sfidante
+    char seed_1; // Seme del player_1
+    char seed_2; // Seme del player_2
     char* player_2; // Username dello sfidato
     /* (0 | 1 | 2 | 3 | 4) 0 -> terminata (winner termina la partita) | 1 -> in corso (giocatore accettato) | 2 -> in attesa (il client non gioca nessun'altra partita)
        | 3 -> validazione (un player fa match) | 4 -> nuova creazione (creazione nodo) */
     char  status;
     char result; // (0 | 1 | 2) 0 -> Parità | 1 -> Vince player_1 | 2 -> Vince player_2
-    char step; // Rappresenta l'ultima mossa effettuata
+    char** steps; // Rappresenta tutte le mosse effettuate nella partita
     struct Match* next;
     struct Match* prev;
 };

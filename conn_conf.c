@@ -137,11 +137,7 @@ void handle_client(int client_fd) {
                 free(message_string);
             }
 
-            char* json_string = NULL;
-            if(tmp)
-                json_string = create_match_json_object(tmp);
-            else
-                json_string = create_match_json_object(matches);
+            char* json_string = tmp != NULL ? create_match_json_object(tmp) : create_match_json_object(matches);
 
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
@@ -163,8 +159,8 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         char* response = NULL;
         if(check_session_exist(auth[1], atoi(auth[0]))) {
-            struct Match* match_list = get_matches_by_username(auth[1]);
-            char* json_string = create_match_json_array(match_list);
+            struct Match* match_list = get_save_matches_by_username(auth[1]);
+            char* json_string = create_save_match_json_array(match_list);
 
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
@@ -190,7 +186,11 @@ void handle_client(int client_fd) {
         if(check_session_exist(auth[1], session_id)) {
             int match_id = get_match_id(body_pt);
             struct Match* match = find_match_by_id(matches, match_id);
-            match -> step = get_step(body_pt);
+            for(int i = 0; i < STEPS_SIZE; i++)
+                if(match -> steps[i] != NULL) {
+                    match -> steps[i] = get_step(body_pt);
+                    break;
+                }
 
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nMossa memorizzata correttamente";
         } else {
@@ -223,6 +223,30 @@ void handle_client(int client_fd) {
         } else {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
             printf("Update Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+        }
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
+    } else if(strncmp(buffer, "POST /matches", 13) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            struct Match* user_matches = get_matches_by_username(auth[1]);
+
+            char* json_string = create_match_json_array(user_matches);
+
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
+
+            printf("Matches Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(response);
+        } else {
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
+            printf("Matches Response\n%s\n", response);
             write(client_fd, response, strlen(response));
         }
 
@@ -284,6 +308,14 @@ void handle_client(int client_fd) {
             struct Match* match = find_match_by_id(matches, match_id);
 
             match -> status = '2';
+            // Imposta il seme (O | X) per il giocatore host della partita; l'avversario sarà costretto ad accettare l'altro seme
+            if(match -> seed_1 == '\0') {
+                match -> seed_1 = rand_seed();
+                if(match -> seed_1 == 'O')
+                    match -> seed_2 = 'X';
+                else
+                    match -> seed_2 = 'O';
+            }
 
             // Aggiunta messaggio di partita in attesa alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
@@ -291,12 +323,19 @@ void handle_client(int client_fd) {
             enqueue(match -> status, message_string);
             free(message_string);
 
-            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita messa in attesa";
-        } else
-            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
+            char* json_string = strcmp(match -> player_1, auth[1]) == 0 ? create_seed_json_object(match -> seed_1) : create_seed_json_object(match -> seed_2);
 
-        printf("Waiting Response\n%s\n", response);
-        write(client_fd, response, strlen(response));
+            response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
+            sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
+
+            printf("Waiting Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+            free(response);
+        } else {
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
+            printf("Waiting Response\n%s\n", response);
+            write(client_fd, response, strlen(response));
+        }
 
         free(auth[0]);
         free(auth[1]);
