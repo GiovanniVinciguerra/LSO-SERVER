@@ -16,6 +16,7 @@ struct Session* check_session_exist(char* username, int session_id);
 struct Session* create_session_node(char* username);
 struct Session* add_session(struct Session* session_list, struct Session* new_session);
 struct Session* find_session_by_id(struct Session* session_list, int session_id);
+struct Session* find_session_by_username(struct Session* session_list, char* username);
 struct Session* remove_session_node(struct Session* session_list, int session_id);
 void free_session_list(struct Session* session_list);
 int session_list_len(struct Session* session_list);

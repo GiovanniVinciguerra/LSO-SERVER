@@ -55,6 +55,20 @@ struct Session* find_session_by_id(struct Session* session_list, int session_id)
     return find;
 }
 
+struct Session* find_session_by_username(struct Session* session_list, char* username) {
+    struct Session* find = NULL;
+
+    while(session_list != NULL) {
+        if(strcmp(session_list -> username, username) == 0) {
+            find = session_list;
+            break;
+        }
+        session_list = session_list -> next;
+    }
+
+    return find;
+}
+
 struct Session* remove_session_node(struct Session* session_list, int session_id) {
     struct Session* find_delete = find_session_by_id(session_list, session_id);
 

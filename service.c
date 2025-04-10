@@ -34,7 +34,7 @@ struct User* get_user(char* body) {
     new_user -> username = strdup(cJSON_GetObjectItemCaseSensitive(json, "username") -> valuestring);
     new_user -> password = strdup(cJSON_GetObjectItemCaseSensitive(json, "password") -> valuestring);
 
-    cJSON_free(json);
+    cJSON_Delete(json);
 
     return new_user;
 }
@@ -45,7 +45,7 @@ int get_match_id(char* body) {
     char* match_id_string = strdup(cJSON_GetObjectItemCaseSensitive(json, "match_id") -> valuestring);
     int match_id = atoi(match_id_string);
 
-    cJSON_free(json);
+    cJSON_Delete(json);
     free(match_id_string);
 
     return match_id;

@@ -74,12 +74,20 @@ void handle_client(int client_fd) {
         //struct User* find_user = check_user_exist(body_pt);
         struct User* find_user = check_user_exist(body_pt);
         char* response = NULL;
-        if(find_user != NULL) {
-            // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
-            sessions = add_session(sessions, create_session_node(find_user -> username));
+        if(find_user) {
+            // Controlla che l'utente non si era già loggato precedentemente
+            struct Session* find_session = find_session_by_username(sessions, find_user -> username);
 
-            // Allega i restanti dati dell'utente al response da mandare al client
-            char* json_string = create_user_json_object(find_user, sessions -> session_id);
+            char* json_string = NULL;
+            if(find_session) // Se l'utente è stato trovato salta l'inserimento nella lista e assegna lo stesso session_id
+                json_string = create_user_json_object(find_user, find_session -> session_id);
+            else {
+                // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
+                sessions = add_session(sessions, create_session_node(find_user -> username));
+                // Allega i restanti dati dell'utente al response da mandare al client
+                json_string = create_user_json_object(find_user, sessions -> session_id);
+            }
+
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
