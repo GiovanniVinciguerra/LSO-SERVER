@@ -278,12 +278,14 @@ void handle_client(int client_fd) {
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
             sprintf(message_string, "Si è appena conclusa la partita tra %s e %s. Con la vittoria di ", match -> player_1, match -> player_2);
 
-            // Imposta il vincitore
-            if(strcmp(match -> player_1, auth[1]) == 0) {
+            // Imposta il vincitore o il pareggio
+            if(match -> result != '0') {
+                match -> result = '0';
+                strcat(message_string, "entrambi");
+            } else if(strcmp(match -> player_1, auth[1]) == 0) {
                 match -> result = '1';
                 strcat(message_string, match -> player_1);
-            }
-            else {
+            } else {
                 match -> result = '2';
                 strcat(message_string, match -> player_2);
             }
