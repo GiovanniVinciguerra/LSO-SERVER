@@ -278,11 +278,8 @@ void handle_client(int client_fd) {
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
             sprintf(message_string, "Si è appena conclusa la partita tra %s e %s. Con la vittoria di ", match -> player_1, match -> player_2);
 
-            // Imposta il vincitore o il pareggio
-            if(match -> result != '0') {
-                match -> result = '0';
-                strcat(message_string, "entrambi");
-            } else if(strcmp(match -> player_1, auth[1]) == 0) {
+            // Imposta il vincitore
+            if(strcmp(match -> player_1, auth[1]) == 0) {
                 match -> result = '1';
                 strcat(message_string, match -> player_1);
             } else {
@@ -306,6 +303,36 @@ void handle_client(int client_fd) {
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
 
         printf("Winner Response\n%s\n", response);
+        write(client_fd, response, strlen(response));
+
+        free(auth[0]);
+        free(auth[1]);
+        free(auth);
+    } else if(strncmp(buffer, "POST /tie", 9) == 0) {
+        char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
+        char* response = NULL;
+        if(check_session_exist(auth[1], session_id)) {
+            int match_id = get_match_id(body_pt);
+            struct Match* match = find_match_by_id(matches, match_id);
+
+            match -> status = '0';
+            match -> result = '0';
+
+            char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
+            sprintf(message_string, "Si è appena conclusa la partita tra %s e %s con un pareggio. Che scontro incredibile 😮", match -> player_1, match -> player_2);
+            enqueue(match -> status, message_string);
+            free(message_string);
+
+            save_game(match);
+
+            matches = free_match_node(matches, match);
+
+            response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita salvata correttamente";
+        } else
+            response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
+
+        printf("Tie Response\n%s\n", response);
         write(client_fd, response, strlen(response));
 
         free(auth[0]);
