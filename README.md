@@ -1,5 +1,5 @@
 # LSO-CLIENT
-Client tris progetto LSO
+Server tris progetto LSO
 
 Lo studente dovrà realizzare un server multi-client per giocare a Tris (con due giocatori per ogni partita). Un giocatore può creare una o più partite, ma può giocare solo ad una partita alla volta. Il creatore di una partita può accettare o rifiutare la richiesta di partecipazione alla partita da un nuovo giocatore. Gli stati di gioco possono essere terminata, in corso, in attesa, nuova creazione. Gli stati di terminazione di partita possono essere vittoria, sconfitta, pareggio rispetto al giocatore. In base allo stato di gioco di ogni singola partita, tutti i giocatori collegati al server dovranno ricevere un messaggio diverso. Per esempio, "in attesa" tutti i giocatori vengono invitati a partecipare alla partita. Le partite devono essere identificate in maniera univoca. A fine partita (terminata), i giocatori di ogni partita possono scegliere se iniziare o meno un'altra partita.
 
