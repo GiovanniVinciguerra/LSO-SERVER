@@ -15,6 +15,13 @@ int init_tcp_server(int port) {
     address.sin_addr.s_addr = INADDR_ANY; // Accetta connessioni su tutte le interfacce
     address.sin_port = htons(port); // Converte la porta in formato di rete
 
+    // Permette di ottenere la porta 8080 anche se questa non è libera
+    int set = 1;
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &set, sizeof(set)) < 0) {
+        perror("setsockopt failed");
+        exit(1);
+    }
+
     // Binding della socket
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("Bind failed");
