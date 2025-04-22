@@ -369,7 +369,10 @@ void handle_client(int client_fd) {
             enqueue(match -> status, message_string);
             free(message_string);
 
-            char* json_string = strcmp(match -> player_1, auth[1]) == 0 ? create_seed_json_object(match -> seed_1) : create_seed_json_object(match -> seed_2);
+            char* json_string = create_seed_json_object(match -> seed_1);
+
+            free(match -> player_2);
+            match -> player_2 = NULL;
 
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
