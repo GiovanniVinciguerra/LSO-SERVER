@@ -232,6 +232,10 @@ void handle_client(int client_fd) {
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
+            // Elimina il match dopo aver fatto l'update per tutti e 2 i client
+            if(match -> status == '0')
+                matches = free_match_node(matches, match); // Elimina la partita dalla lista di matches
+
             printf("Update Response\n%s\n", response);
             write(client_fd, response, strlen(response));
             free(response);
@@ -301,9 +305,6 @@ void handle_client(int client_fd) {
             // Salva la partita
             save_game(match);
 
-            // Elimina la partita dalla lista di matches
-            matches = free_match_node(matches, match);
-
             // Costruisce la response
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita salvata correttamente";
         } else
@@ -332,8 +333,6 @@ void handle_client(int client_fd) {
             free(message_string);
 
             save_game(match);
-
-            matches = free_match_node(matches, match);
 
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita salvata correttamente";
         } else
