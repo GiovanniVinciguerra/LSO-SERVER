@@ -1,3 +1,6 @@
+#ifndef GAME_HEADER
+#define GAME_HEADER
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,3 +23,5 @@ struct Match* free_match_node(struct Match* match_list, struct Match* match);
 void free_match_list(struct Match* match_list);
 int match_list_len(struct Match* match_list);
 void print_match_list(struct Match* match_list);
+
+#endif

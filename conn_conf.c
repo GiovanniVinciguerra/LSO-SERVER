@@ -64,7 +64,12 @@ void handle_client(int client_fd) {
     // Gestione delle varie richieste
     if (strncmp(buffer, "POST /signin", 12) == 0) {
         struct User* new_user = get_user(body_pt);
-        int save_check = save(new_user);
+
+        // Gestiamo la concorrenza per l'ultilizzo del file user
+        pthread_mutex_lock(&user_file_mutex);
+            int save_check = save(new_user);
+        pthread_mutex_unlock(&user_file_mutex);
+
         // Risposta al client usando save_check
         char* response = NULL;
         if(save_check == 0)
@@ -78,19 +83,26 @@ void handle_client(int client_fd) {
         write(client_fd, response, strlen(response));
         free_user_node(new_user);
     } else if (strncmp(buffer, "POST /login", 11) == 0) {
-        //struct User* find_user = check_user_exist(body_pt);
-        struct User* find_user = check_user_exist(body_pt);
+        // Apre il file utenti per la lettura e la riceerca un altro thread potrebbe modificarlo mentre viene letto
+        pthread_mutex_lock(&user_file_mutex);
+            struct User* find_user = check_user_exist(body_pt);
+        pthread_mutex_unlock(&user_file_mutex);
+
         char* response = NULL;
         if(find_user) {
-            // Controlla che l'utente non si era già loggato precedentemente
-            struct Session* find_session = find_session_by_username(sessions, find_user -> username);
+            // Mentre si cerca una sessione un altro thread potrebbe maneggiare i puntatori next cambiandoli
+            pthread_mutex_lock(&sessions_mutex);
+                struct Session* find_session = find_session_by_username(sessions, find_user -> username); // Controlla che l'utente non si era già loggato precedentemente
+            pthread_mutex_unlock(&sessions_mutex);
 
             char* json_string = NULL;
             if(find_session) // Se l'utente è stato trovato salta l'inserimento nella lista e assegna lo stesso session_id
                 json_string = create_user_json_object(find_user, find_session -> session_id);
             else {
-                // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
-                sessions = add_session(sessions, create_session_node(find_user -> username));
+                pthread_mutex_lock(&sessions_mutex);
+                    sessions = add_session(sessions, create_session_node(find_user -> username)); // Aggiunge l'utente appena loggato alla sessione assegnando anche un session_id
+                pthread_mutex_unlock(&sessions_mutex);
+
                 // Allega i restanti dati dell'utente al response da mandare al client
                 json_string = create_user_json_object(find_user, sessions -> session_id);
             }
@@ -113,8 +125,16 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            sessions = remove_session_node(sessions, session_id);
+
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            pthread_mutex_lock(&sessions_mutex);
+                sessions = remove_session_node(sessions, session_id);
+            pthread_mutex_unlock(&sessions_mutex);
+
             response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente disconnesso correttamente";
         } else
             response = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nUtente non loggato correttamente";
@@ -129,28 +149,40 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
+
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
             struct Match* tmp = matches;
 
-            /* Controlla se esiste un match in attesa (2) e se i player sono diversi dal giocatore che fa richiesta
-               (gestione partite multiple) altrimenti lo crea (logica del server).
-               player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
-               player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
-            while(tmp != NULL && (strcmp(tmp -> player_1, auth[1]) == 0 || tmp -> status != '2'))
-                tmp = tmp -> next;
+            // Durante il  matchmaking la lista matches non può assolutamente essere modificata da altri thread
+            pthread_mutex_lock(&matches_mutex);
+                /* Controlla se esiste un match in attesa (2) e se i player sono diversi dal giocatore che fa richiesta
+                   (gestione partite multiple) altrimenti lo crea (logica del server).
+                   player_1 == username_richiesta allora nessuna partita in attesa trovata (logica del client).
+                   player_1 != username_richiesta allora una partita in attesa è stata trovata (logica del client). */
+                while(tmp != NULL && (strcmp(tmp -> player_1, auth[1]) == 0 || tmp -> status != '2'))
+                    tmp = tmp -> next;
 
-            if(tmp) {
-                // Il player_1 potrà sapere se c'è stata una modifica per il suo match in attesa e eventualmente accettare la partita.
-                tmp -> player_2 = strdup(auth[1]);
-                tmp -> status = '3';
-            } else {
-                matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
-                // Aggiunta messaggio di nuova partita creata alla coda dei messaggi
-                char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
-                sprintf(message_string, "%s ha creato una nuova partita 👾.", matches -> player_1);
-                enqueue(matches -> status, message_string);
-                free(message_string);
-            }
+                if(tmp) {
+                    // Il player_1 potrà sapere se c'è stata una modifica per il suo match in attesa e eventualmente accettare la partita.
+                    tmp -> player_2 = strdup(auth[1]);
+                    tmp -> status = '3';
+                } else {
+                    matches = add_new_match(matches, create_match_node(auth[1], '0'), true);
+                    // Aggiunta messaggio di nuova partita creata alla coda dei messaggi
+                    char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
+                    sprintf(message_string, "%s ha creato una nuova partita 👾.", matches -> player_1);
+
+                    pthread_mutex_lock(&messages_mutex);
+                        enqueue(matches -> status, message_string);
+                    pthread_mutex_unlock(&messages_mutex);
+
+                    free(message_string);
+                }
+            pthread_mutex_unlock(&matches_mutex);
 
             char* json_string = tmp != NULL ? create_match_json_object(tmp) : create_match_json_object(matches);
 
@@ -172,9 +204,19 @@ void handle_client(int client_fd) {
         free(auth);
     } else if(strncmp(buffer, "POST /stat", 10) == 0) {
         char** auth = get_authority_credentials(body_pt);
+        int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], atoi(auth[0]))) {
-            struct Match* match_list = get_save_matches_by_username(auth[1]);
+
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            // Accede al file delle partite salavate per le statistiche degli utenti
+            pthread_mutex_lock(&match_file_mutex);
+                struct Match* match_list = get_save_matches_by_username(auth[1]);
+            pthread_mutex_unlock(&match_file_mutex);
+
             char* json_string = create_save_match_json_array(match_list);
 
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
@@ -198,15 +240,23 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            int match_id = get_match_id(body_pt);
-            struct Match* match = find_match_by_id(matches, match_id);
 
-            for(int i = 0; i < STEPS_SIZE; i++)
-                if(match -> steps[i] == NULL) {
-                    match -> steps[i] = get_step(body_pt);
-                    break;
-                }
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            int match_id = get_match_id(body_pt);
+
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* match = find_match_by_id(matches, match_id);
+
+                for(int i = 0; i < STEPS_SIZE; i++)
+                    if(match -> steps[i] == NULL) {
+                        match -> steps[i] = get_step(body_pt);
+                        break;
+                    }
+            pthread_mutex_unlock(&matches_mutex);
 
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nMossa memorizzata correttamente";
         } else
@@ -222,9 +272,17 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
+
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
             int match_id = get_match_id(body_pt);
-            struct Match* match = find_match_by_id(matches, match_id);
+
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* match = find_match_by_id(matches, match_id);
+            pthread_mutex_unlock(&matches_mutex);
 
             char* json_string = create_match_json_object(match);
 
@@ -232,9 +290,10 @@ void handle_client(int client_fd) {
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
 
-            // Elimina il match dopo aver fatto l'update per tutti e 2 i client
-            if(match -> status == '0')
-                matches = free_match_node(matches, match); // Elimina la partita dalla lista di matches
+            pthread_mutex_lock(&matches_mutex);
+                if(match -> status == '0') // Elimina il match dopo aver fatto l'update per tutti e 2 i client
+                    matches = free_match_node(matches, match); // Elimina la partita dalla lista di matches
+            pthread_mutex_unlock(&matches_mutex);
 
             printf("Update Response\n%s\n", response);
             write(client_fd, response, strlen(response));
@@ -252,8 +311,15 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            struct Match* user_matches = get_matches_by_username(auth[1]);
+
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* user_matches = get_matches_by_username(auth[1]);
+            pthread_mutex_unlock(&matches_mutex);
 
             char* json_string = create_match_json_array(user_matches);
 
@@ -278,32 +344,46 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            int match_id = get_match_id(body_pt);
-            struct Match* match = find_match_by_id(matches, match_id);
 
-            // Imposta lo status su terminata (0)
-            match -> status = '0';
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            int match_id = get_match_id(body_pt);
+
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* match = find_match_by_id(matches, match_id);
+
+                // Imposta lo status su terminata (0)
+                match -> status = '0';
+            pthread_mutex_unlock(&matches_mutex);
 
             // Aggiunta messaggio di partita terminata alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
             sprintf(message_string, "Si è appena conclusa la partita tra %s e %s. Con la vittoria di ", match -> player_1, match -> player_2);
 
-            // Imposta il vincitore
-            if(strcmp(match -> player_1, auth[1]) == 0) {
-                match -> result = '1';
-                strcat(message_string, match -> player_1);
-            } else {
-                match -> result = '2';
-                strcat(message_string, match -> player_2);
-            }
+            pthread_mutex_lock(&matches_mutex);
+                if(strcmp(match -> player_1, auth[1]) == 0) { // Imposta il vincitore
+                    match -> result = '1';
+                    strcat(message_string, match -> player_1);
+                } else {
+                    match -> result = '2';
+                    strcat(message_string, match -> player_2);
+                }
+            pthread_mutex_unlock(&matches_mutex);
 
             strcat(message_string, ". Che scontro incredibile 😮");
-            enqueue(match -> status, message_string);
+
+            pthread_mutex_lock(&messages_mutex);
+                enqueue(match -> status, message_string);
+            pthread_mutex_unlock(&messages_mutex);
+
             free(message_string);
 
-            // Salva la partita
-            save_game(match);
+            pthread_mutex_lock(&match_file_mutex);
+                save_game(match); // Salva la partita
+            pthread_mutex_unlock(&match_file_mutex);
 
             // Costruisce la response
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita salvata correttamente";
@@ -320,19 +400,33 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            int match_id = get_match_id(body_pt);
-            struct Match* match = find_match_by_id(matches, match_id);
 
-            match -> status = '0';
-            match -> result = '0';
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            int match_id = get_match_id(body_pt);
+
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* match = find_match_by_id(matches, match_id);
+
+                match -> status = '0';
+                match -> result = '0';
+            pthread_mutex_unlock(&matches_mutex);
 
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
             sprintf(message_string, "Si è appena conclusa la partita tra %s e %s con un pareggio. Che scontro incredibile 😮", match -> player_1, match -> player_2);
-            enqueue(match -> status, message_string);
+
+            pthread_mutex_lock(&messages_mutex);
+                enqueue(match -> status, message_string);
+            pthread_mutex_unlock(&messages_mutex);
+
             free(message_string);
 
-            save_game(match);
+            pthread_mutex_lock(&match_file_mutex);
+                save_game(match);
+            pthread_mutex_unlock(&match_file_mutex);
 
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita salvata correttamente";
         } else
@@ -348,30 +442,44 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            int match_id = get_match_id(body_pt);
-            struct Match* match = find_match_by_id(matches, match_id);
 
-            match -> status = '2';
-            // Imposta il seme (O | X) per il giocatore host della partita; l'avversario sarà costretto ad accettare l'altro seme
-            if(match -> seed_1 == '\0') {
-                match -> seed_1 = rand_seed();
-                if(match -> seed_1 == 'O')
-                    match -> seed_2 = 'X';
-                else
-                    match -> seed_2 = 'O';
-            }
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            int match_id = get_match_id(body_pt);
+
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* match = find_match_by_id(matches, match_id);
+
+                match -> status = '2';
+                // Imposta il seme (O | X) per il giocatore host della partita; l'avversario sarà costretto ad accettare l'altro seme
+                if(match -> seed_1 == '\0') {
+                    match -> seed_1 = rand_seed();
+                    if(match -> seed_1 == 'O')
+                        match -> seed_2 = 'X';
+                    else
+                        match -> seed_2 = 'O';
+                }
+            pthread_mutex_unlock(&matches_mutex);
 
             // Aggiunta messaggio di partita in attesa alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
             sprintf(message_string, "La partita di %s è ora in attesa. Partecipate in tanti 😄", match -> player_1);
-            enqueue(match -> status, message_string);
+
+            pthread_mutex_lock(&messages_mutex);
+                enqueue(match -> status, message_string);
+            pthread_mutex_unlock(&messages_mutex);
+
             free(message_string);
 
             char* json_string = create_seed_json_object(match -> seed_1);
 
-            free(match -> player_2);
-            match -> player_2 = NULL;
+            pthread_mutex_lock(&matches_mutex);
+                free(match -> player_2);
+                match -> player_2 = NULL;
+            pthread_mutex_unlock(&matches_mutex);
 
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
@@ -392,16 +500,28 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            int match_id = get_match_id(body_pt);
-            struct Match* match = find_match_by_id(matches, match_id);
 
-            match -> status = '1';
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            int match_id = get_match_id(body_pt);
+
+            pthread_mutex_lock(&matches_mutex);
+                struct Match* match = find_match_by_id(matches, match_id);
+
+                match -> status = '1';
+            pthread_mutex_unlock(&matches_mutex);
 
             // Aggiunta messaggio di partita tornata in attesa alla coda dei messaggi
             char* message_string = (char*)malloc(sizeof(char) * MESSAGE_BODY_SIZE);
             sprintf(message_string, "La partita tra %s e %s è ora in corso. Che tensione 😱", match -> player_1, match -> player_2);
-            enqueue(match -> status, message_string);
+
+            pthread_mutex_lock(&messages_mutex);
+                enqueue(match -> status, message_string);
+            pthread_mutex_unlock(&messages_mutex);
+
             free(message_string);
 
             response = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\nPartita messa in corso";
@@ -418,8 +538,16 @@ void handle_client(int client_fd) {
         char** auth = get_authority_credentials(body_pt);
         int session_id = atoi(auth[0]);
         char* response = NULL;
-        if(check_session_exist(auth[1], session_id)) {
-            char* json_string = create_message_json_array();
+
+        pthread_mutex_lock(&sessions_mutex);
+            bool check = check_session_exist(auth[1], session_id);
+        pthread_mutex_unlock(&sessions_mutex);
+
+        if(check) {
+            // Scorre la coda dei messaggi un inserimento farebbe cambiare gli indici di inizio e fine
+            pthread_mutex_lock(&messages_mutex);
+                char* json_string = create_message_json_array();
+            pthread_mutex_unlock(&messages_mutex);
 
             response = (char*)malloc(sizeof(char) * (RESPONSE_SIZE + strlen(json_string)));
             sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n%s", strlen(json_string), json_string);
