@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include "conn_conf.h"
 
 // Funzione wrapper per la gestione del thread
@@ -13,23 +12,31 @@ void* client_thread(void* arg) {
 }
 
 int main() {
-    int server_fd = init_tcp_server(PORT);
+    init_tcp_server(PORT);
+
+    pthread_t shtdwn_tid;
+    if(pthread_create(&shtdwn_tid, NULL, keylogger, NULL) != 0) {
+        perror("Errore nella creazione del thread per la gestione della sequenza (exit) di terminazione");
+        close(server_fd);
+        exit(1);
+    }
+    pthread_detach(shtdwn_tid); // Il thread si libera da solo
 
     // Gestione delle connessioni in ingresso
     struct sockaddr_in client_address;
     socklen_t client_len = sizeof(client_address);
 
     int client_fd;
-    while (1) {
+    while (!stop_server) { // stop_server viene impostato a 1 quando viene premuta la sequenza exit
         // Accetta una connessione in ingresso
         if ((client_fd = accept(server_fd, (struct sockaddr *)&client_address, &client_len)) < 0) {
-            perror("Accept failed");
+            if (stop_server) // Interrompe il ciclo quando volatile sig_atomic_t stop_server = 1 cioè quando viene richiesto lo shutdown con la sequenza 'exit'
+                break;
+            perror("Accept fallito");
             continue; // Continua a gestire altre connessioni
         }
 
-        printf("Connessione accettata da %s:%d\n",
-        inet_ntoa(client_address.sin_addr),
-        ntohs(client_address.sin_port));
+        printf("Connessione accettata da %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
 
         // Copia il descrittore della variabile locale client_fd in modo da non modificare il contesto dei thread già in esecuzione
         int* t_client_fd = (int*)malloc(sizeof(int));
@@ -49,9 +56,10 @@ int main() {
             continue;
         }
 
-        pthread_detach(tid); // Il thread si libera da solo alla fine
+        pthread_detach(tid);
     }
 
-    close(server_fd); // Chiudi la socket del server
+    free_resources();
+
     return 0;
 }

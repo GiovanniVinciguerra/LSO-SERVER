@@ -15,5 +15,6 @@ bool isFull();
 bool isEmpty();
 void enqueue(char label, char* body);
 void dequeue();
+void free_messages();
 
 #endif

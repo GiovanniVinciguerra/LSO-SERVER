@@ -1,13 +1,15 @@
 #include "conn_conf.h"
 
-int init_tcp_server(int port) {
-    int server_fd;
+int server_fd = -1;
+volatile sig_atomic_t stop_server = 0;
+
+void init_tcp_server(int port) {
     struct sockaddr_in address;
 
     // Creazione della socket
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("Socket failed");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     // Impostazione dell'indirizzo e della porta
@@ -18,27 +20,25 @@ int init_tcp_server(int port) {
     // Permette di ottenere la porta 8080 anche se questa non è libera
     int set = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &set, sizeof(set)) < 0) {
-        perror("setsockopt failed");
+        perror("setsockopt fallita");
         exit(1);
     }
 
     // Binding della socket
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("Bind failed");
+        perror("Bind fallito");
         close(server_fd);
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     // Messa in ascolto della socket
     if (listen(server_fd, BACKLOG) < 0) {
         perror("Listen failed");
         close(server_fd);
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     printf("Server in ascolto sulla porta %d\n", port);
-
-    return server_fd; // Restituisce il file descriptor della socket
 }
 
 void handle_client(int client_fd) {
@@ -590,4 +590,44 @@ void free_user_node(struct User* user) {
     free(user -> surname);
     free(user -> username);
     free(user);
+}
+
+void free_resources() {
+    printf("Deallocazione delle sessioni attive...\n");
+    free_session_list(sessions);
+    sessions = NULL;
+    printf("Sessioni deallocate con successo.\n");
+
+    printf("Deallocazione delle partite attive...\n");
+    free_match_list(matches);
+    matches = NULL;
+    printf("Partite deallocate con successo.\n");
+
+    printf("Deallocazioni dei messaggi di sistema...\n");
+    free_messages();
+    printf("Messaggi di sistema deallocati con successo.\n");
+
+    printf("Tutte le risorse liberate.\nServer spento.\n");
+}
+
+void* keylogger(void* arg) {
+    char buffer[256]; // Impostata lunghezza maggiore per proteggere da scritture più lunghe che potrebbero andare a scrivere posizioni in memoria non lecite
+
+    while(!stop_server) {
+        if(fgets(buffer, sizeof(buffer), stdin)) {
+            if(strcmp(buffer, "exit\n") == 0) {
+                stop_server = 1;
+                printf("Comando 'exit' ricevuto. Spegnimento in corso...\n");
+
+                printf("Chiusura socket server in corso...\n");
+                if(server_fd >= 0) {
+                    shutdown(server_fd, SHUT_RDWR);
+                    close(server_fd); // Chiude la socket del server
+                }
+                printf("Socket chiusa.\n");
+            }
+        }
+    }
+
+    return NULL;
 }

@@ -47,3 +47,16 @@ void dequeue() {
     } else
         crl_q.top = (crl_q.top + 1) % MESSAGE_QUEUE_SIZE;
 }
+
+void free_messages() {
+    int top = crl_q.top;
+    if (crl_q.top != crl_q.bottom) {
+        while(top != (crl_q.bottom + 1)) {
+            free(crl_q.msgs[top].body);
+            top = (top + 1) % MESSAGE_QUEUE_SIZE;
+        }
+
+        free(crl_q.msgs);
+        crl_q.msgs = NULL;
+    }
+}

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <signal.h>
 #include "signin.h"
 #include "login.h"
 #include "structure.h"
@@ -19,9 +20,14 @@
 #include "message.h"
 #include "thread_mutex.h"
 
-int init_tcp_server();
+extern int server_fd; // Descrittore globale della socket del server
+extern volatile sig_atomic_t stop_server; // Flag terminazione del ciclo principale per gestire la terminazione da thread principale
+
+void init_tcp_server();
 void handle_client(int client_fd);
 char* find_body(char* buffer);
 void free_user_node(struct User* user);
+void free_resources(); // Si occupa di rilasciare tutte le risorse se la sequenza exit viene captata
+void* keylogger(void* arg); // Ascolta la tastiera per intercettare la sequenza exit
 
 #endif
